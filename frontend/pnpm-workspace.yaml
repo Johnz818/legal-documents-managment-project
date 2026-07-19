@@ -1,0 +1,5 @@
+allowBuilds:
+  esbuild: true
+  maplibre-gl: true
+  sharp: true
+  vue-demi: true

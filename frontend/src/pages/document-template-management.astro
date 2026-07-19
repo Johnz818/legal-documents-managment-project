@@ -1,0 +1,27 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import AppHeader from '@/components/common/AppHeader.vue'
+import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
+import TemplateManagementPage from '@/components/document-template-management/TemplateManagementPage.vue'
+---
+
+<BaseLayout title="文书模板管理 - 诉讼案件管理系统">
+  <AppHeader client:load />
+  <AppSidebarLayout client:only="vue" headerHeight="64px">
+    <main class="flex-1 flex flex-col">
+      <PageHeader 
+        title="文书模板管理"
+        description="管理系统预设模板和自定义模板，支持创建、编辑、删除和预览"
+        :breadcrumbs={[
+          { label: '文书管理', href: './document-generation-entry.html' },
+          { label: '模板管理' }
+        ]}
+      />
+      <div class="flex-1 overflow-auto">
+        <TemplateManagementPage client:only="vue" />
+      </div>
+    </main>
+  </AppSidebarLayout>
+</BaseLayout>

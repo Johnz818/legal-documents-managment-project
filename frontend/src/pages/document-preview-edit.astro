@@ -1,0 +1,13 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CommonHeader from '@/components/common/CommonHeader.vue'
+import DocumentPreviewEdit from '@/components/document-preview-edit/DocumentPreviewEdit.vue'
+---
+
+<BaseLayout title="文书预览与编辑 - 诉讼案件管理系统">
+  <CommonHeader client:load />
+  <main class="flex-1 bg-background">
+    <DocumentPreviewEdit client:load />
+  </main>
+</BaseLayout>

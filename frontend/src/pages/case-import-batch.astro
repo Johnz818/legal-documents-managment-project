@@ -1,0 +1,24 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CommonHeader from '@/components/common/CommonHeader.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
+import CaseImportBatch from '@/components/case-import-batch/CaseImportBatch.vue'
+---
+
+<BaseLayout title="案件批量导入 - 诉讼案件管理系统">
+  <CommonHeader client:load />
+  <main class="flex flex-col min-h-[calc(100vh-64px)]">
+    <PageHeader 
+      title="案件批量导入"
+      description="下载模板并上传填写好的Excel文件，快速批量导入案件数据"
+      :breadcrumbs={[
+        { label: '案件管理', href: './case-list-view.html' },
+        { label: '批量导入' }
+      ]}
+    />
+    <div class="flex-1 p-6">
+      <CaseImportBatch client:load />
+    </div>
+  </main>
+</BaseLayout>

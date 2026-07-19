@@ -1,0 +1,21 @@
+# Node
+**/node_modules/
+**/.astro/
+**/dist/
+
+# Java
+**/target/
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log

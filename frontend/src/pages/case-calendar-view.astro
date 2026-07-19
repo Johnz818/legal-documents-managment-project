@@ -1,0 +1,27 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CommonHeader from '@/components/common/CommonHeader.vue'
+import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
+import CalendarView from '@/components/case-calendar-view/CalendarView.vue'
+---
+
+<BaseLayout title="案件日历视图 - 诉讼案件管理系统">
+  <CommonHeader client:load />
+  <AppSidebarLayout client:load headerHeight="64px">
+    <main class="flex-1 flex flex-col">
+      <PageHeader 
+        title="案件日历视图"
+        description="以日历形式展示所有案件的关键时间节点和自定义提醒事项"
+        breadcrumbs={[
+          { label: '提醒事项', href: './reminder-dashboard.html' },
+          { label: '案件日历' }
+        ]}
+      />
+      <div class="flex-1 overflow-auto">
+        <CalendarView client:idle />
+      </div>
+    </main>
+  </AppSidebarLayout>
+</BaseLayout>

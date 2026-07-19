@@ -1,0 +1,25 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CommonHeader from '@/components/common/CommonHeader.vue'
+import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
+import UserListContent from '@/components/user-list/UserListContent.vue'
+---
+
+<BaseLayout title="用户列表 - 诉讼案件管理系统">
+  <CommonHeader client:load />
+  <AppSidebarLayout client:load headerHeight="64px">
+    <main class="flex-1 flex flex-col">
+      <PageHeader 
+        title="用户列表"
+        description="管理系统用户账户，创建、编辑或禁用用户"
+        :breadcrumbs={[
+          { label: '用户管理中心', href: './user-management-dashboard.html' },
+          { label: '用户列表' }
+        ]}
+      />
+      <UserListContent client:load />
+    </main>
+  </AppSidebarLayout>
+</BaseLayout>

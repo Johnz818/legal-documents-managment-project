@@ -1,0 +1,27 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CommonHeader from '@/components/common/CommonHeader.vue'
+import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
+import CaseTagManagement from '@/components/case-tag-management/CaseTagManagement.vue'
+---
+
+<BaseLayout title="案件标签管理 - 诉讼案件管理系统">
+  <CommonHeader client:load />
+  <AppSidebarLayout client:load headerHeight="64px">
+    <main class="flex-1 flex flex-col">
+      <PageHeader 
+        title="案件标签管理"
+        description="创建、编辑和删除自定义案件标签，用于灵活分类和筛选案件"
+        :breadcrumbs={[
+          { label: '案件管理', href: './case-bulk-management-entry.html' },
+          { label: '标签管理' }
+        ]}
+      />
+      <div class="flex-1 overflow-auto">
+        <CaseTagManagement client:idle />
+      </div>
+    </main>
+  </AppSidebarLayout>
+</BaseLayout>

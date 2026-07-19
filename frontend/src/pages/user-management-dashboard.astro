@@ -1,0 +1,16 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CommonHeader from '@/components/common/CommonHeader.vue'
+import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
+import UserManagementDashboard from '@/components/user-management-dashboard/UserManagementDashboard.vue'
+---
+
+<BaseLayout title="用户管理与权限控制中心 - 诉讼案件管理系统">
+  <CommonHeader client:load />
+  <AppSidebarLayout client:load headerHeight="64px">
+    <main class="flex-1 flex flex-col">
+      <UserManagementDashboard client:idle />
+    </main>
+  </AppSidebarLayout>
+</BaseLayout>

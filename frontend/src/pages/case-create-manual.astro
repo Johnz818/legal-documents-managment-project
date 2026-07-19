@@ -1,0 +1,30 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CommonHeader from '@/components/common/CommonHeader.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
+import CaseCreateForm from '@/components/case-create-manual/CaseCreateForm.vue'
+---
+
+<BaseLayout title="手动创建案件 - 诉讼案件管理系统">
+  <CommonHeader client:load />
+  
+  <main class="flex flex-col min-h-[calc(100vh-64px)]">
+    <PageHeader 
+      title="创建新案件"
+      description="请填写案件的基本信息，所有带*的字段为必填项"
+      :breadcrumbs={[
+        { label: '案件管理', href: './case-list-view.html' },
+        { label: '创建案件' }
+      ]}
+    />
+    
+    <div class="flex-1 overflow-auto">
+      <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+          <CaseCreateForm client:load />
+        </div>
+      </div>
+    </div>
+  </main>
+</BaseLayout>

@@ -1,0 +1,21 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CommonHeader from '@/components/common/CommonHeader.vue'
+import AppFooter from '@/components/common/AppFooter.vue'
+import NotificationCenter from '@/components/notification-center/NotificationCenter.vue'
+---
+
+<BaseLayout title="系统通知中心 - 诉讼案件管理系统">
+  <CommonHeader client:load />
+  <main class="flex-1 flex flex-col">
+    <NotificationCenter client:load />
+  </main>
+  <AppFooter />
+</BaseLayout>
+
+<style>
+  main {
+    min-height: calc(100vh - 64px - 80px);
+  }
+</style>

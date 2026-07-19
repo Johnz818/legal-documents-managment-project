@@ -1,0 +1,16 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CommonHeader from '@/components/common/CommonHeader.vue'
+import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
+import ReminderDashboardContent from '@/components/reminder-dashboard/ReminderDashboardContent.vue'
+---
+
+<BaseLayout title="提醒事项仪表盘 - 诉讼案件管理系统">
+  <CommonHeader client:load />
+  <AppSidebarLayout client:load headerHeight="64px">
+    <main class="flex-1 flex flex-col">
+      <ReminderDashboardContent client:idle />
+    </main>
+  </AppSidebarLayout>
+</BaseLayout>

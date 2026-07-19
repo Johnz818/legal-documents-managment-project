@@ -1,0 +1,28 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CommonHeader from '@/components/common/CommonHeader.vue'
+import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
+import PageHeader from '@/components/common/PageHeader.vue'
+import TemplateEditor from '@/components/document-template-custom-create-edit/TemplateEditor.vue'
+---
+
+<BaseLayout title="自定义模板创建编辑 - 诉讼案件管理系统">
+  <CommonHeader client:load />
+  <AppSidebarLayout client:load headerHeight="64px">
+    <main class="flex-1 flex flex-col">
+      <PageHeader 
+        title="自定义模板创建编辑"
+        description="创建或编辑自定义文书模板，支持插入案件字段占位符"
+        :breadcrumbs={[
+          { label: '文书管理', href: './document-generation-entry.html' },
+          { label: '模板管理', href: './document-template-management.html' },
+          { label: '自定义模板编辑' }
+        ]}
+      />
+      <div class="flex-1 overflow-auto">
+        <TemplateEditor client:load />
+      </div>
+    </main>
+  </AppSidebarLayout>
+</BaseLayout>

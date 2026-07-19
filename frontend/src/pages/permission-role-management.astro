@@ -1,0 +1,16 @@
+
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CommonHeader from '@/components/common/CommonHeader.vue'
+import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
+import PermissionRoleManagement from '@/components/permission-role-management/PermissionRoleManagement.vue'
+---
+
+<BaseLayout title="角色与权限管理 - 诉讼案件管理系统">
+  <CommonHeader client:load />
+  <AppSidebarLayout client:load headerHeight="64px">
+    <main class="flex-1 flex flex-col">
+      <PermissionRoleManagement client:idle />
+    </main>
+  </AppSidebarLayout>
+</BaseLayout>

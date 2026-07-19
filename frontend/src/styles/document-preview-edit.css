@@ -1,0 +1,65 @@
+
+/* 文书预览与编辑页面特定样式 */
+
+.document-preview-container {
+  font-family: 'SimSun', 'Microsoft YaHei', serif;
+  line-height: 1.8;
+  color: #333;
+}
+
+.document-preview-container p {
+  margin: 0.5em 0;
+  text-indent: 2em;
+}
+
+.document-preview-container p:first-child {
+  text-indent: 0;
+}
+
+.document-editor-toolbar {
+  background: linear-gradient(to right, #f8f9fa, #ffffff);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.document-editor-textarea {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: none;
+}
+
+.document-export-panel {
+  background: #f0f9ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.document-variable-button {
+  transition: all 0.2s ease;
+}
+
+.document-variable-button:hover {
+  background-color: #dbeafe;
+  border-color: #3b82f6;
+}
+
+/* 全屏编辑模式 */
+.document-editor-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: white;
+}
+
+/* 打印样式 */
+@media print {
+  .document-preview-container {
+    page-break-inside: avoid;
+  }
+
+  .document-preview-container p {
+    orphans: 3;
+    widows: 3;
+  }
+}
