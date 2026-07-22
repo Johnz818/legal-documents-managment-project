@@ -1,0 +1,17 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: legal-case-management
+  datasource:
+    url: ${LEGAL_DB_URL}
+    username: ${LEGAL_DB_USERNAME}
+    password: ${LEGAL_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
