@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${LEGAL_TEST_DB_URL}
-    username: ${LEGAL_TEST_DB_USERNAME}
-    password: ${LEGAL_TEST_DB_PASSWORD}
+    url: jdbc:mysql://localhost:3306/legal_case_management_test
+    username: ${LEGAL_DB_USERNAME}
+    password: ${LEGAL_DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
