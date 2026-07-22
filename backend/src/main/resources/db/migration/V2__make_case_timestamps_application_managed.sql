@@ -1,0 +1,3 @@
+ALTER TABLE cases
+    MODIFY created_at DATETIME(6) NOT NULL,
+    MODIFY updated_at DATETIME(6) NOT NULL;
