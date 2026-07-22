@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: ${LEGAL_TEST_DB_URL}
+    username: ${LEGAL_TEST_DB_USERNAME}
+    password: ${LEGAL_TEST_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
