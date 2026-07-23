@@ -11,7 +11,7 @@ import { toast } from 'vue-sonner'
 import SafeIcon from '@/components/common/SafeIcon.vue'
 import VariableInsertPanel from './VariableInsertPanel.vue'
 import TemplatePreview from './TemplatePreview.vue'
-import { MOCK_DOCUMENT_TEMPLATES, MOCK_TEMPLATE_VARIABLES, DocumentTemplateModel, TemplateType } from '@/data/document'
+import { MOCK_DOCUMENT_TEMPLATES, MOCK_TEMPLATE_VARIABLES, TemplateType } from '@/data/document'
 
 interface FormData {
   templateId: string

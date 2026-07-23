@@ -1,6 +1,6 @@
 
         
-import { UserModel, MOCK_USERS } from './user';
+import { MOCK_USERS } from './user';
 
 export enum CaseStage {
   PendingFiling = "立案中",
@@ -171,5 +171,3 @@ export function simulateCaseImport(file: File): ImportResultModel {
         ],
     };
 }
-        
-      

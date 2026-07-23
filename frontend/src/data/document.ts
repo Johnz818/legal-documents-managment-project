@@ -1,7 +1,7 @@
 
         
-import { CaseModel, MOCK_CASES, CaseStage } from './case';
-import { MOCK_USERS, UserModel } from './user';
+import { type CaseModel, MOCK_CASES, CaseStage } from './case';
+import { MOCK_USERS, type UserModel } from './user';
 
 export enum TemplateType {
   Preset = "系统预设",
@@ -134,5 +134,3 @@ export function generateDocumentPreview(caseId: string, templateId: string): Doc
         content: content,
     };
 }
-        
-      
