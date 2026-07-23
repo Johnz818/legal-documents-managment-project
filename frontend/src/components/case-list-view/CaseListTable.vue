@@ -1,6 +1,5 @@
-
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,92 +17,107 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import SafeIcon from '@/components/common/SafeIcon.vue'
-import { getCaseSummaryList, MOCK_CASE_TAGS } from '@/data/case'
 import EmptyState from '@/components/common/EmptyState.vue'
+import SafeIcon from '@/components/common/SafeIcon.vue'
+import { getCases } from '@/services/caseService'
+import type { CaseSummaryResponse } from '@/types/case'
 
-// Get initial data
-const cases = getCaseSummaryList()
+const cases = ref<CaseSummaryResponse[]>([])
+const isLoading = ref(true)
+const errorMessage = ref('')
+const selectedIds = ref<Set<number>>(new Set())
+const sortBy = ref<'caseNumber' | 'createdAt' | 'updatedAt'>('createdAt')
+const sortOrder = ref<'asc' | 'desc'>('desc')
 
-// Selection state
-const selectedIds = ref<Set<string>>(new Set())
-const sortBy = ref<'caseNumber' | 'filingDate' | 'hearingDate'>('caseNumber')
-const sortOrder = ref<'asc' | 'desc'>('asc')
-
-// Computed properties
 const allSelected = computed(() => {
-  return cases.length > 0 && selectedIds.value.size === cases.length
+  return cases.value.length > 0 && selectedIds.value.size === cases.value.length
 })
 
 const someSelected = computed(() => {
-  return selectedIds.value.size > 0 && selectedIds.value.size < cases.length
+  return selectedIds.value.size > 0 && selectedIds.value.size < cases.value.length
 })
 
 const sortedCases = computed(() => {
-  const sorted = [...cases].sort((a, b) => {
-    let aVal: any = a[sortBy.value]
-    let bVal: any = b[sortBy.value]
+  return [...cases.value].sort((firstCase, secondCase) => {
+    const firstValue = firstCase[sortBy.value].toLowerCase()
+    const secondValue = secondCase[sortBy.value].toLowerCase()
 
-    if (aVal === null || aVal === undefined) aVal = ''
-    if (bVal === null || bVal === undefined) bVal = ''
-
-    if (typeof aVal === 'string') {
-      aVal = aVal.toLowerCase()
-      bVal = bVal.toLowerCase()
-    }
-
-    if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1
-    if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1
+    if (firstValue < secondValue) return sortOrder.value === 'asc' ? -1 : 1
+    if (firstValue > secondValue) return sortOrder.value === 'asc' ? 1 : -1
     return 0
   })
-  return sorted
 })
 
-// Toggle selection
+const loadCases = async () => {
+  isLoading.value = true
+  errorMessage.value = ''
+  selectedIds.value = new Set()
+
+  try {
+    cases.value = await getCases()
+  } catch {
+    cases.value = []
+    errorMessage.value = '案件数据加载失败，请确认后端服务可用后重试。'
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const toggleSelectAll = () => {
   if (allSelected.value) {
-    selectedIds.value.clear()
+    selectedIds.value = new Set()
   } else {
-    selectedIds.value = new Set(cases.map(c => c.id))
+    selectedIds.value = new Set(cases.value.map(caseItem => caseItem.id))
   }
 }
 
-const toggleSelect = (caseId: string) => {
-  if (selectedIds.value.has(caseId)) {
-    selectedIds.value.delete(caseId)
+const toggleSelect = (caseId: number) => {
+  const nextSelectedIds = new Set(selectedIds.value)
+
+  if (nextSelectedIds.has(caseId)) {
+    nextSelectedIds.delete(caseId)
   } else {
-    selectedIds.value.add(caseId)
+    nextSelectedIds.add(caseId)
   }
+
+  selectedIds.value = nextSelectedIds
 }
 
-// Sort handler
-const handleSort = (column: 'caseNumber' | 'filingDate' | 'hearingDate') => {
+const handleSort = (column: 'caseNumber' | 'createdAt' | 'updatedAt') => {
   if (sortBy.value === column) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortBy.value = column
-    sortOrder.value = 'asc'
+    sortOrder.value = column === 'caseNumber' ? 'asc' : 'desc'
   }
 }
 
-// Get tag display
-const getTagColor = (tagId: string) => {
-  return MOCK_CASE_TAGS.find(t => t.id === tagId)?.color || 'bg-gray-500'
+const formatDateTime = (dateTime: string) => {
+  return new Date(dateTime).toLocaleString('zh-CN')
 }
 
-const getTagName = (tagId: string) => {
-  return MOCK_CASE_TAGS.find(t => t.id === tagId)?.name || ''
-}
-
-// Format date
-const formatDate = (dateStr: string | null) => {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleDateString('zh-CN')
-}
+onMounted(loadCases)
 </script>
 
 <template>
-  <div v-if="cases.length === 0" class="flex items-center justify-center h-96">
+  <div v-if="isLoading" class="flex h-96 items-center justify-center">
+    <div class="flex items-center gap-2 text-sm text-muted-foreground">
+      <SafeIcon name="LoaderCircle" :size="18" class="animate-spin" />
+      正在加载案件...
+    </div>
+  </div>
+
+  <div v-else-if="errorMessage" class="flex h-96 items-center justify-center">
+    <div class="flex max-w-md flex-col items-center gap-3 text-center">
+      <SafeIcon name="CircleAlert" :size="28" class="text-destructive" />
+      <p class="text-sm text-muted-foreground">{{ errorMessage }}</p>
+      <Button variant="outline" size="sm" @click="loadCases">
+        重新加载
+      </Button>
+    </div>
+  </div>
+
+  <div v-else-if="cases.length === 0" class="flex h-96 items-center justify-center">
     <EmptyState variant="cases" />
   </div>
 
@@ -111,7 +125,6 @@ const formatDate = (dateStr: string | null) => {
     <Table>
       <TableHeader>
         <TableRow>
-          <!-- Checkbox column -->
           <TableHead class="w-12">
             <Checkbox
               :checked="allSelected"
@@ -120,7 +133,6 @@ const formatDate = (dateStr: string | null) => {
             />
           </TableHead>
 
-          <!-- Case number -->
           <TableHead class="cursor-pointer hover:bg-muted" @click="handleSort('caseNumber')">
             <div class="flex items-center gap-1">
               案号
@@ -132,56 +144,40 @@ const formatDate = (dateStr: string | null) => {
             </div>
           </TableHead>
 
-          <!-- Court -->
+          <TableHead>案件名称</TableHead>
+          <TableHead>案件状态</TableHead>
           <TableHead>法院</TableHead>
-
-          <!-- Parties -->
-          <TableHead>当事人</TableHead>
-
-          <!-- Case cause -->
-          <TableHead>案由</TableHead>
-
-          <!-- Stage -->
-          <TableHead>案件阶段</TableHead>
-
-          <!-- Lead attorney -->
           <TableHead>主办律师</TableHead>
 
-          <!-- Filing date -->
-          <TableHead class="cursor-pointer hover:bg-muted" @click="handleSort('filingDate')">
+          <TableHead class="cursor-pointer hover:bg-muted" @click="handleSort('createdAt')">
             <div class="flex items-center gap-1">
-              立案时间
+              创建时间
               <SafeIcon
-                v-if="sortBy === 'filingDate'"
+                v-if="sortBy === 'createdAt'"
                 :name="sortOrder === 'asc' ? 'ArrowUp' : 'ArrowDown'"
                 :size="14"
               />
             </div>
           </TableHead>
 
-          <!-- Hearing date -->
-          <TableHead class="cursor-pointer hover:bg-muted" @click="handleSort('hearingDate')">
+          <TableHead class="cursor-pointer hover:bg-muted" @click="handleSort('updatedAt')">
             <div class="flex items-center gap-1">
-              开庭时间
+              更新时间
               <SafeIcon
-                v-if="sortBy === 'hearingDate'"
+                v-if="sortBy === 'updatedAt'"
                 :name="sortOrder === 'asc' ? 'ArrowUp' : 'ArrowDown'"
                 :size="14"
               />
             </div>
           </TableHead>
 
-          <!-- Tags -->
-          <TableHead>标签</TableHead>
-
-          <!-- Actions -->
+          <TableHead>归档状态</TableHead>
           <TableHead class="w-12 text-right">操作</TableHead>
         </TableRow>
       </TableHeader>
 
       <TableBody>
         <TableRow v-for="caseItem in sortedCases" :key="caseItem.id" class="hover:bg-muted/50">
-          <!-- Checkbox -->
           <TableCell>
             <Checkbox
               :checked="selectedIds.has(caseItem.id)"
@@ -189,7 +185,6 @@ const formatDate = (dateStr: string | null) => {
             />
           </TableCell>
 
-          <!-- Case number (clickable) -->
           <TableCell class="font-medium">
             <a
               :href="`./case-detail-view.html?id=${caseItem.id}`"
@@ -199,49 +194,22 @@ const formatDate = (dateStr: string | null) => {
             </a>
           </TableCell>
 
-          <!-- Court -->
-          <TableCell class="text-sm">{{ caseItem.courtName }}</TableCell>
-
-          <!-- Parties -->
-          <TableCell class="text-sm">
-            <div class="max-w-xs truncate">
-              {{ caseItem.plaintiff }} vs {{ caseItem.defendant }}
-            </div>
-          </TableCell>
-
-          <!-- Case cause -->
-          <TableCell class="text-sm">{{ caseItem.caseCause }}</TableCell>
-
-          <!-- Stage -->
+          <TableCell class="text-sm">{{ caseItem.caseName }}</TableCell>
           <TableCell>
             <Badge variant="outline" class="text-xs">
-              {{ caseItem.caseStage }}
+              {{ caseItem.status }}
+            </Badge>
+          </TableCell>
+          <TableCell class="text-sm">{{ caseItem.courtName || '-' }}</TableCell>
+          <TableCell class="text-sm">{{ caseItem.leadLawyerName || '-' }}</TableCell>
+          <TableCell class="text-sm">{{ formatDateTime(caseItem.createdAt) }}</TableCell>
+          <TableCell class="text-sm">{{ formatDateTime(caseItem.updatedAt) }}</TableCell>
+          <TableCell>
+            <Badge :variant="caseItem.archived ? 'secondary' : 'outline'" class="text-xs">
+              {{ caseItem.archived ? '已归档' : '未归档' }}
             </Badge>
           </TableCell>
 
-          <!-- Lead attorney -->
-          <TableCell class="text-sm">{{ caseItem.leadAttorneyName }}</TableCell>
-
-          <!-- Filing date -->
-          <TableCell class="text-sm">{{ formatDate(caseItem.filingDate) }}</TableCell>
-
-          <!-- Hearing date -->
-          <TableCell class="text-sm">{{ formatDate(caseItem.hearingDate) }}</TableCell>
-
-          <!-- Tags -->
-          <TableCell>
-            <div class="flex flex-wrap gap-1">
-              <Badge
-                v-for="tag in caseItem.tags"
-                :key="tag.id"
-                :class="`${tag.color} text-white text-xs`"
-              >
-                {{ tag.name }}
-              </Badge>
-            </div>
-          </TableCell>
-
-          <!-- Actions -->
           <TableCell class="text-right">
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
