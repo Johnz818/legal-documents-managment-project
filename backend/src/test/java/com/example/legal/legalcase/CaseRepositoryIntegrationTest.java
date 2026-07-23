@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,10 +42,17 @@ class CaseRepositoryIntegrationTest {
         CaseEntity caseEntity = new CaseEntity(
                 caseNumber,
                 "Test case",
-                CaseStatus.PRE_TRIAL_PREPARATION
+                CaseStatus.PRE_TRIAL_PREPARATION,
+                "Test plaintiff",
+                "Test defendant",
+                "Test lawyer"
         );
         caseEntity.setCourtName("Test court");
-        caseEntity.setLeadLawyerName("Test lawyer");
+        caseEntity.setCaseCause("Contract dispute");
+        caseEntity.setFilingDate(LocalDate.of(2026, 1, 10));
+        caseEntity.setHearingDate(LocalDate.of(2026, 2, 20));
+        caseEntity.setJudgmentDate(LocalDate.of(2026, 3, 30));
+        caseEntity.setDescription("Test case description");
 
         CaseEntity saved = caseRepository.saveAndFlush(caseEntity);
         Long savedId = saved.getId();
@@ -56,7 +64,14 @@ class CaseRepositoryIntegrationTest {
         assertThat(retrieved.getCaseName()).isEqualTo("Test case");
         assertThat(retrieved.getStatus()).isEqualTo(CaseStatus.PRE_TRIAL_PREPARATION);
         assertThat(retrieved.getCourtName()).isEqualTo("Test court");
+        assertThat(retrieved.getCaseCause()).isEqualTo("Contract dispute");
+        assertThat(retrieved.getPlaintiff()).isEqualTo("Test plaintiff");
+        assertThat(retrieved.getDefendant()).isEqualTo("Test defendant");
         assertThat(retrieved.getLeadLawyerName()).isEqualTo("Test lawyer");
+        assertThat(retrieved.getFilingDate()).isEqualTo(LocalDate.of(2026, 1, 10));
+        assertThat(retrieved.getHearingDate()).isEqualTo(LocalDate.of(2026, 2, 20));
+        assertThat(retrieved.getJudgmentDate()).isEqualTo(LocalDate.of(2026, 3, 30));
+        assertThat(retrieved.getDescription()).isEqualTo("Test case description");
         assertThat(retrieved.getCreatedAt()).isNotNull();
         assertThat(retrieved.getUpdatedAt()).isNotNull();
         assertThat(retrieved.isArchived()).isFalse();
@@ -70,18 +85,48 @@ class CaseRepositoryIntegrationTest {
     }
 
     @Test
+    void allowsOptionalCoreFieldsToBeNull() {
+        CaseEntity caseEntity = new CaseEntity(
+                uniqueCaseNumber(),
+                "Incomplete test case",
+                CaseStatus.PENDING_FILING,
+                "Test plaintiff",
+                "Test defendant",
+                "Test lawyer"
+        );
+
+        CaseEntity saved = caseRepository.saveAndFlush(caseEntity);
+        entityManager.clear();
+
+        CaseEntity retrieved = caseRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(retrieved.getCourtName()).isNull();
+        assertThat(retrieved.getCaseCause()).isNull();
+        assertThat(retrieved.getFilingDate()).isNull();
+        assertThat(retrieved.getHearingDate()).isNull();
+        assertThat(retrieved.getJudgmentDate()).isNull();
+        assertThat(retrieved.getDescription()).isNull();
+    }
+
+    @Test
     void rejectsDuplicateCaseNumber() {
         String caseNumber = uniqueCaseNumber();
         caseRepository.saveAndFlush(new CaseEntity(
                 caseNumber,
                 "First test case",
-                CaseStatus.PENDING_FILING
+                CaseStatus.PENDING_FILING,
+                "First plaintiff",
+                "First defendant",
+                "First lawyer"
         ));
 
         CaseEntity duplicate = new CaseEntity(
                 caseNumber,
                 "Duplicate test case",
-                CaseStatus.IN_TRIAL
+                CaseStatus.IN_TRIAL,
+                "Second plaintiff",
+                "Second defendant",
+                "Second lawyer"
         );
 
         assertThatThrownBy(() -> caseRepository.saveAndFlush(duplicate))
@@ -98,6 +143,36 @@ class CaseRepositoryIntegrationTest {
     void rejectsNullStatus() {
         assertThatThrownBy(() -> insertCase(uniqueCaseNumber(), "Test case", null))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void rejectsNullPlaintiff() {
+        assertThatThrownBy(() -> insertCaseWithParticipants(
+                uniqueCaseNumber(),
+                null,
+                "Test defendant",
+                "Test lawyer"
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void rejectsNullDefendant() {
+        assertThatThrownBy(() -> insertCaseWithParticipants(
+                uniqueCaseNumber(),
+                "Test plaintiff",
+                null,
+                "Test lawyer"
+        )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void rejectsNullLeadLawyer() {
+        assertThatThrownBy(() -> insertCaseWithParticipants(
+                uniqueCaseNumber(),
+                "Test plaintiff",
+                "Test defendant",
+                null
+        )).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -123,12 +198,51 @@ class CaseRepositoryIntegrationTest {
     private void insertCase(String caseNumber, String caseName, String status) {
         jdbcTemplate.update(
                 """
-                INSERT INTO cases (case_number, case_name, status, created_at, updated_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6))
+                INSERT INTO cases (
+                    case_number,
+                    case_name,
+                    status,
+                    plaintiff,
+                    defendant,
+                    lead_lawyer_name,
+                    created_at,
+                    updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6))
                 """,
                 caseNumber,
                 caseName,
-                status
+                status,
+                "Test plaintiff",
+                "Test defendant",
+                "Test lawyer"
+        );
+    }
+
+    private void insertCaseWithParticipants(
+            String caseNumber,
+            String plaintiff,
+            String defendant,
+            String leadLawyerName
+    ) {
+        jdbcTemplate.update(
+                """
+                INSERT INTO cases (
+                    case_number,
+                    case_name,
+                    status,
+                    plaintiff,
+                    defendant,
+                    lead_lawyer_name,
+                    created_at,
+                    updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6))
+                """,
+                caseNumber,
+                "Test case",
+                "PENDING_FILING",
+                plaintiff,
+                defendant,
+                leadLawyerName
         );
     }
 

@@ -12,6 +12,7 @@ import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -38,8 +39,29 @@ public class CaseEntity {
     @Column(name = "court_name")
     private String courtName;
 
-    @Column(name = "lead_lawyer_name")
+    @Column(name = "case_cause")
+    private String caseCause;
+
+    @Column(name = "plaintiff", nullable = false)
+    private String plaintiff;
+
+    @Column(name = "defendant", nullable = false)
+    private String defendant;
+
+    @Column(name = "lead_lawyer_name", nullable = false)
     private String leadLawyerName;
+
+    @Column(name = "filing_date")
+    private LocalDate filingDate;
+
+    @Column(name = "hearing_date")
+    private LocalDate hearingDate;
+
+    @Column(name = "judgment_date")
+    private LocalDate judgmentDate;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -55,10 +77,20 @@ public class CaseEntity {
     protected CaseEntity() {
     }
 
-    public CaseEntity(String caseNumber, String caseName, CaseStatus status) {
+    public CaseEntity(
+            String caseNumber,
+            String caseName,
+            CaseStatus status,
+            String plaintiff,
+            String defendant,
+            String leadLawyerName
+    ) {
         this.caseNumber = caseNumber;
         this.caseName = caseName;
         this.status = status;
+        this.plaintiff = plaintiff;
+        this.defendant = defendant;
+        this.leadLawyerName = leadLawyerName;
     }
 
     public Long getId() {
@@ -97,12 +129,68 @@ public class CaseEntity {
         this.courtName = courtName;
     }
 
+    public String getCaseCause() {
+        return caseCause;
+    }
+
+    public void setCaseCause(String caseCause) {
+        this.caseCause = caseCause;
+    }
+
+    public String getPlaintiff() {
+        return plaintiff;
+    }
+
+    public void setPlaintiff(String plaintiff) {
+        this.plaintiff = plaintiff;
+    }
+
+    public String getDefendant() {
+        return defendant;
+    }
+
+    public void setDefendant(String defendant) {
+        this.defendant = defendant;
+    }
+
     public String getLeadLawyerName() {
         return leadLawyerName;
     }
 
     public void setLeadLawyerName(String leadLawyerName) {
         this.leadLawyerName = leadLawyerName;
+    }
+
+    public LocalDate getFilingDate() {
+        return filingDate;
+    }
+
+    public void setFilingDate(LocalDate filingDate) {
+        this.filingDate = filingDate;
+    }
+
+    public LocalDate getHearingDate() {
+        return hearingDate;
+    }
+
+    public void setHearingDate(LocalDate hearingDate) {
+        this.hearingDate = hearingDate;
+    }
+
+    public LocalDate getJudgmentDate() {
+        return judgmentDate;
+    }
+
+    public void setJudgmentDate(LocalDate judgmentDate) {
+        this.judgmentDate = judgmentDate;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public LocalDateTime getCreatedAt() {

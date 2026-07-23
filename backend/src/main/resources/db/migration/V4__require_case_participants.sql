@@ -1,0 +1,4 @@
+ALTER TABLE cases
+    MODIFY plaintiff VARCHAR(255) NOT NULL,
+    MODIFY defendant VARCHAR(255) NOT NULL,
+    MODIFY lead_lawyer_name VARCHAR(255) NOT NULL;

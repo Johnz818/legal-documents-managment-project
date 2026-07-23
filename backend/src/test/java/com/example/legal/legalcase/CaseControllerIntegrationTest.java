@@ -82,16 +82,20 @@ class CaseControllerIntegrationTest {
                     case_name,
                     status,
                     court_name,
+                    plaintiff,
+                    defendant,
                     lead_lawyer_name,
                     created_at,
                     updated_at,
                     archived
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 caseNumber,
                 "Test case " + index,
                 "IN_TRIAL",
                 "Test court",
+                "Test plaintiff",
+                "Test defendant",
                 "Test lawyer",
                 timestamp,
                 timestamp,
