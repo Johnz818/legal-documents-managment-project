@@ -338,7 +338,7 @@ CaseDetailContent.vue
   → GET /api/cases/{id}
 ```
 
-Case List displays live scalar case information. Its current filter and bulk-action controls still use frontend discovery data and do not change the backend query.
+Case List displays live scalar case information and supports API-backed filtering by case-number prefix, case-name prefix, status, and exact lead-lawyer snapshot name. Its bulk-action controls remain frontend discovery data and do not change backend state.
 
 Case Detail displays live scalar case information. Its documents and reminders remain mock-backed, and supporting members are shown as not yet available. Tags and supporting members are not synthesized from legacy case mocks.
 
@@ -351,14 +351,14 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 - Persist core case information.
 - View the case list using live case data.
 - View case details using live case data.
+- Find cases using approved lookup criteria and list filters.
 
 ### Planned user journeys
 
-1. Find cases using approved lookup criteria and list filters.
-2. Create and persist a new case through the case creation workflow.
-3. Assign user-backed supporting members and organize cases with tags.
-4. Work with case-related documents and reminders using live data.
-5. Access case capabilities through authenticated and authorized user accounts.
+1. Create and persist a new case through the case creation workflow.
+2. Assign user-backed supporting members and organize cases with tags.
+3. Work with case-related documents and reminders using live data.
+4. Access case capabilities through authenticated and authorized user accounts.
 
 ## Product Rules
 
@@ -371,10 +371,9 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 ## Known Gaps
 
 - Detailed frontend case stages are not fully aligned with backend statuses.
-- Case List filters and bulk actions are not connected to backend capabilities.
+- Case List bulk actions are not connected to backend capabilities.
 - Case tags and supporting members are not yet represented by backend relationship models or APIs.
 - Case-related documents and reminders remain mock-backed.
-- Case search and live list-filter integration are not implemented.
 - Case creation is not connected to the backend.
 - Authentication and authorization are not implemented.
 - Audit-log behavior is represented in navigation and permissions but is not implemented.

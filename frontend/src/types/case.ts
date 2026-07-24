@@ -1,3 +1,16 @@
+export type CaseStatusCode =
+  | 'PENDING_FILING'
+  | 'PRE_TRIAL_PREPARATION'
+  | 'IN_TRIAL'
+  | 'CLOSED'
+
+export interface CaseSearchCriteria {
+  caseNumberPrefix?: string
+  caseNamePrefix?: string
+  status?: CaseStatusCode
+  leadLawyerName?: string
+}
+
 export interface CaseSummaryResponse {
   id: number
   caseNumber: string

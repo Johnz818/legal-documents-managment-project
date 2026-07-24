@@ -5,8 +5,7 @@ import AppHeader from '@/components/common/AppHeader.vue'
 import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import CaseListHeader from '@/components/case-list-view/CaseListHeader.vue'
-import CaseListFilters from '@/components/case-list-view/CaseListFilters.vue'
-import CaseListTable from '@/components/case-list-view/CaseListTable.vue'
+import CaseListContent from '@/components/case-list-view/CaseListContent.vue'
 import CaseListActions from '@/components/case-list-view/CaseListActions.vue'
 ---
 
@@ -23,16 +22,11 @@ import CaseListActions from '@/components/case-list-view/CaseListActions.vue'
         <!-- Header with action buttons -->
         <CaseListHeader client:only="vue" />
         
-        <!-- Filters -->
-        <CaseListFilters client:only="vue" />
-        
         <!-- Batch actions toolbar -->
         <CaseListActions client:only="vue" />
         
-        <!-- Table -->
-        <div class="flex-1 overflow-auto rounded-lg border bg-card">
-          <CaseListTable client:only="vue" />
-        </div>
+        <!-- Coordinated filters and table -->
+        <CaseListContent client:only="vue" />
       </div>
     </main>
   </AppSidebarLayout>

@@ -1,8 +1,14 @@
 import { CaseNotFoundError, fetchCaseById, fetchCases } from '@/api/caseApi'
-import type { CaseDetailResponse, CaseSummaryResponse } from '@/types/case'
+import type {
+  CaseDetailResponse,
+  CaseSearchCriteria,
+  CaseSummaryResponse,
+} from '@/types/case'
 
-export async function getCases(): Promise<CaseSummaryResponse[]> {
-  const response = await fetchCases()
+export async function getCases(
+  criteria: CaseSearchCriteria = {},
+): Promise<CaseSummaryResponse[]> {
+  const response = await fetchCases(criteria)
   return response.data
 }
 

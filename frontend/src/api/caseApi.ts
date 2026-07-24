@@ -1,4 +1,8 @@
-import type { CaseDetailResponse, CaseListResponse } from '@/types/case'
+import type {
+  CaseDetailResponse,
+  CaseListResponse,
+  CaseSearchCriteria,
+} from '@/types/case'
 
 const CASES_ENDPOINT = 'http://localhost:8080/api/cases'
 
@@ -9,8 +13,21 @@ export class CaseNotFoundError extends Error {
   }
 }
 
-export async function fetchCases(): Promise<CaseListResponse> {
-  const response = await fetch(CASES_ENDPOINT)
+export async function fetchCases(
+  criteria: CaseSearchCriteria = {},
+): Promise<CaseListResponse> {
+  const query = new URLSearchParams()
+
+  Object.entries(criteria).forEach(([name, value]) => {
+    if (value) {
+      query.set(name, value)
+    }
+  })
+
+  const endpoint = query.size > 0
+    ? `${CASES_ENDPOINT}?${query.toString()}`
+    : CASES_ENDPOINT
+  const response = await fetch(endpoint)
 
   if (!response.ok) {
     throw new Error(`Failed to fetch cases: HTTP ${response.status}`)

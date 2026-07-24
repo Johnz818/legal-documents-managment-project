@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -18,28 +17,20 @@ import {
 import { Badge } from '@/components/ui/badge'
 import EmptyState from '@/components/common/EmptyState.vue'
 import SafeIcon from '@/components/common/SafeIcon.vue'
-import { getCases } from '@/services/caseService'
 import type { CaseSummaryResponse } from '@/types/case'
 
-const cases = ref<CaseSummaryResponse[]>([])
-const isLoading = ref(true)
-const errorMessage = ref('')
-
-const loadCases = async () => {
-  isLoading.value = true
-  errorMessage.value = ''
-
-  try {
-    cases.value = await getCases()
-  } catch {
-    cases.value = []
-    errorMessage.value = '案件数据加载失败，请确认后端服务可用后重试。'
-  } finally {
-    isLoading.value = false
-  }
+interface Props {
+  cases: CaseSummaryResponse[]
+  isLoading: boolean
+  errorMessage: string
+  isFiltered: boolean
 }
 
-onMounted(loadCases)
+defineProps<Props>()
+
+const emit = defineEmits<{
+  retry: []
+}>()
 </script>
 
 <template>
@@ -54,14 +45,19 @@ onMounted(loadCases)
     <div class="flex max-w-md flex-col items-center gap-3 text-center">
       <SafeIcon name="CircleAlert" :size="28" class="text-destructive" />
       <p class="text-sm text-muted-foreground">{{ errorMessage }}</p>
-      <Button variant="outline" size="sm" @click="loadCases">
+      <Button variant="outline" size="sm" @click="emit('retry')">
         重新加载
       </Button>
     </div>
   </div>
 
   <div v-else-if="cases.length === 0" class="flex h-96 items-center justify-center">
-    <EmptyState variant="cases" />
+    <div v-if="isFiltered" class="flex max-w-md flex-col items-center gap-2 text-center">
+      <SafeIcon name="SearchX" :size="28" class="text-muted-foreground" />
+      <p class="font-medium">未找到匹配的案件</p>
+      <p class="text-sm text-muted-foreground">请调整查询条件后重试。</p>
+    </div>
+    <EmptyState v-else variant="cases" />
   </div>
 
   <div v-else class="w-full overflow-x-auto">
