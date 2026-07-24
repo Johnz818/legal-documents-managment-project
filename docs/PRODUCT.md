@@ -136,9 +136,13 @@ Current backend status values:
 - `待立案`
 - `审理准备`
 - `审理中`
+- `已判决(上诉期内)`
+- `上诉审理中`
+- `已判决(生效)`
+- `执行中`
 - `已结案`
 
-The original frontend mock model contains additional detailed lifecycle stages. These remain frontend discovery data and are not yet the backend persistence contract.
+`已结案` remains supported for existing and generally closed cases. Archival is a separate state and is not a Case status.
 
 ### Case Tag
 

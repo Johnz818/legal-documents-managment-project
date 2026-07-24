@@ -2,6 +2,8 @@ package com.example.legal.legalcase;
 
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataAccessException;
@@ -193,6 +195,29 @@ class CaseRepositoryIntegrationTest {
     void rejectsInvalidStatus() {
         assertThatThrownBy(() -> insertCase(uniqueCaseNumber(), "Test case", "INVALID_STATUS"))
                 .isInstanceOf(DataAccessException.class);
+    }
+
+    @ParameterizedTest
+    @EnumSource(CaseStatus.class)
+    void persistsEverySupportedStatusAsString(CaseStatus status) {
+        String caseNumber = uniqueCaseNumber();
+        CaseEntity caseEntity = new CaseEntity(
+                caseNumber,
+                "Status test case",
+                status,
+                "Test plaintiff",
+                "Test defendant",
+                "Test lawyer"
+        );
+
+        caseRepository.saveAndFlush(caseEntity);
+
+        String storedStatus = jdbcTemplate.queryForObject(
+                "SELECT status FROM cases WHERE case_number = ?",
+                String.class,
+                caseNumber
+        );
+        assertThat(storedStatus).isEqualTo(status.name());
     }
 
     private void insertCase(String caseNumber, String caseName, String status) {

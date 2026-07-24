@@ -14,10 +14,18 @@ Reserve organization_id for future multi-tenancy.
 
 Case stages
 
-- 待立案
-- 审理准备
-- 审理中
-- 已结案
+- `PENDING_FILING` — 待立案
+- `PRE_TRIAL_PREPARATION` — 审理准备
+- `IN_TRIAL` — 审理中
+- `JUDGMENT_PENDING_APPEAL` — 已判决(上诉期内)
+- `APPEAL_IN_PROGRESS` — 上诉审理中
+- `FINAL_JUDGMENT` — 已判决(生效)
+- `IN_ENFORCEMENT` — 执行中
+- `CLOSED` — 已结案
+
+`CLOSED` remains available for existing records and cases closed without a more specific lifecycle classification. Existing `CLOSED` records are not rewritten speculatively.
+
+Archived is not a Case status. It remains the independent state defined by D-003.
 
 ---
 

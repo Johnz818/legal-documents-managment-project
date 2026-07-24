@@ -24,6 +24,10 @@ Supported status values:
 - `PENDING_FILING`
 - `PRE_TRIAL_PREPARATION`
 - `IN_TRIAL`
+- `JUDGMENT_PENDING_APPEAL`
+- `APPEAL_IN_PROGRESS`
+- `FINAL_JUDGMENT`
+- `IN_ENFORCEMENT`
 - `CLOSED`
 
 Blank parameters are treated as absent. When multiple parameters are supplied, all criteria must match.
