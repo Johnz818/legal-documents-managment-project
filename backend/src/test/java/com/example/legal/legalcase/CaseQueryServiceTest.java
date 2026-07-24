@@ -37,6 +37,42 @@ class CaseQueryServiceTest {
         verify(caseRepository).findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc();
     }
 
+    @Test
+    void usesDefaultQueryWhenSearchCriteriaAreBlank() {
+        when(caseRepository.findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc())
+                .thenReturn(List.of());
+        CaseQueryService service = new CaseQueryService(caseRepository);
+
+        service.getCases("  ", null, null, "\t");
+
+        verify(caseRepository).findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc();
+    }
+
+    @Test
+    void normalizesStructuredSearchCriteria() {
+        when(caseRepository.searchTop10(
+                "(2016)浙\\%01\\_",
+                "张三",
+                "IN_TRIAL",
+                "李律师"
+        )).thenReturn(List.of());
+        CaseQueryService service = new CaseQueryService(caseRepository);
+
+        service.getCases(
+                "  (2016)浙%01_  ",
+                " 张三 ",
+                CaseStatus.IN_TRIAL,
+                " 李律师 "
+        );
+
+        verify(caseRepository).searchTop10(
+                "(2016)浙\\%01\\_",
+                "张三",
+                "IN_TRIAL",
+                "李律师"
+        );
+    }
+
     @ParameterizedTest
     @CsvSource({
             "PENDING_FILING,待立案",

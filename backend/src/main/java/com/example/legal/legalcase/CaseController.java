@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -17,8 +18,18 @@ public class CaseController {
     }
 
     @GetMapping
-    public CaseListResponse getCases() {
-        return caseQueryService.getLatestCases();
+    public CaseListResponse getCases(
+            @RequestParam(required = false) String caseNumberPrefix,
+            @RequestParam(required = false) String caseNamePrefix,
+            @RequestParam(required = false) CaseStatus status,
+            @RequestParam(required = false) String leadLawyerName
+    ) {
+        return caseQueryService.getCases(
+                caseNumberPrefix,
+                caseNamePrefix,
+                status,
+                leadLawyerName
+        );
     }
 
     @GetMapping("/{id}")

@@ -8,12 +8,36 @@ Returns the latest non-archived cases for reusable case-query use cases.
 
 ### Request
 
-The endpoint accepts no request body, query parameters, or authentication headers in the current MVP.
+The endpoint accepts no request body or authentication headers in the current MVP.
+
+Optional query parameters:
+
+| Parameter | Matching rule |
+| --- | --- |
+| `caseNumberPrefix` | Case number starts with the supplied value. |
+| `caseNamePrefix` | Case name starts with the supplied value. |
+| `status` | Exact backend status enum value. |
+| `leadLawyerName` | Exact lead-lawyer snapshot name. |
+
+Supported status values:
+
+- `PENDING_FILING`
+- `PRE_TRIAL_PREPARATION`
+- `IN_TRIAL`
+- `CLOSED`
+
+Blank parameters are treated as absent. When multiple parameters are supplied, all criteria must match.
 
 Local development URL:
 
 ```text
 http://localhost:8080/api/cases
+```
+
+Example:
+
+```text
+http://localhost:8080/api/cases?caseNumberPrefix=(2016)浙01&status=IN_TRIAL
 ```
 
 ### Successful response
@@ -73,7 +97,9 @@ When no cases exist, the endpoint returns:
 - Only non-archived cases are returned.
 - Results are sorted by creation time descending.
 - At most 10 cases are returned.
-- Search, filtering, pagination, and caller-controlled sorting are not supported.
+- Case number and case name use prefix matching rather than arbitrary contains matching.
+- Status and lead-lawyer name use exact matching.
+- Pagination and caller-controlled sorting are not supported.
 
 ### Error handling
 

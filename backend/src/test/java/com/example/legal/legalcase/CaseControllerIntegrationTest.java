@@ -74,6 +74,108 @@ class CaseControllerIntegrationTest {
     }
 
     @Test
+    void filtersCasesByCombinedStructuredCriteria() throws Exception {
+        String prefix = "(2016)浙01-" + UUID.randomUUID();
+        Long matchingId = insertCase(
+                prefix + "-MATCH",
+                1,
+                LocalDateTime.of(2026, 1, 2, 10, 0),
+                false
+        );
+        Long wrongLawyerId = insertCase(
+                prefix + "-WRONG-LAWYER",
+                2,
+                LocalDateTime.of(2026, 1, 3, 10, 0),
+                false
+        );
+        Long archivedId = insertCase(
+                prefix + "-ARCHIVED",
+                3,
+                LocalDateTime.of(2026, 1, 4, 10, 0),
+                true
+        );
+        jdbcTemplate.update(
+                """
+                UPDATE cases
+                SET case_name = ?, status = ?, lead_lawyer_name = ?
+                WHERE id IN (?, ?)
+                """,
+                "张三合同纠纷",
+                "IN_TRIAL",
+                "李律师",
+                matchingId,
+                archivedId
+        );
+        jdbcTemplate.update(
+                "UPDATE cases SET case_name = ?, lead_lawyer_name = ? WHERE id = ?",
+                "张三合同纠纷",
+                "王律师",
+                wrongLawyerId
+        );
+
+        mockMvc.perform(get("/api/cases")
+                        .param("caseNumberPrefix", prefix)
+                        .param("caseNamePrefix", "张三")
+                        .param("status", "IN_TRIAL")
+                        .param("leadLawyerName", "李律师"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(matchingId));
+    }
+
+    @Test
+    void treatsPrefixWildcardsAsLiteralCharacters() throws Exception {
+        String prefix = "WILDCARD-" + UUID.randomUUID();
+        insertCase(prefix + "%-MATCH", 1, LocalDateTime.of(2026, 1, 1, 10, 0), false);
+        insertCase(prefix + "X-NO-MATCH", 2, LocalDateTime.of(2026, 1, 2, 10, 0), false);
+
+        mockMvc.perform(get("/api/cases")
+                        .param("caseNumberPrefix", prefix + "%"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].caseNumber").value(prefix + "%-MATCH"));
+    }
+
+    @Test
+    void limitsFilteredCasesAndKeepsNewestFirst() throws Exception {
+        String prefix = "FILTERED-" + UUID.randomUUID() + "-";
+        LocalDateTime baseTime = LocalDateTime.of(2026, 1, 1, 10, 0);
+        for (int index = 0; index < 12; index++) {
+            insertCase(prefix + index, index, baseTime.plusMinutes(index), false);
+        }
+
+        mockMvc.perform(get("/api/cases")
+                        .param("caseNumberPrefix", prefix))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(10))
+                .andExpect(jsonPath("$.data[0].caseNumber").value(prefix + "11"))
+                .andExpect(jsonPath("$.data[9].caseNumber").value(prefix + "2"));
+    }
+
+    @Test
+    void returnsEmptyDataWhenSearchCriteriaDoNotMatch() throws Exception {
+        insertCase(
+                "EXISTING-" + UUID.randomUUID(),
+                1,
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                false
+        );
+
+        mockMvc.perform(get("/api/cases")
+                        .param("caseNumberPrefix", "NONEXISTENT-" + UUID.randomUUID()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    void returnsBadRequestForInvalidStatus() throws Exception {
+        mockMvc.perform(get("/api/cases")
+                        .param("status", "UNKNOWN"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void returnsCompleteCaseDetail() throws Exception {
         String caseNumber = "DETAIL-" + UUID.randomUUID();
         Long caseId = insertCase(
