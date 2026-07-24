@@ -15,6 +15,21 @@ export interface CaseSearchCriteria {
   leadLawyerName?: string
 }
 
+export interface CaseCreateRequest {
+  caseNumber: string
+  caseName: string
+  status: CaseStatusCode
+  courtName?: string | null
+  caseCause?: string | null
+  plaintiff: string
+  defendant: string
+  leadLawyerName: string
+  filingDate?: string | null
+  hearingDate?: string | null
+  judgmentDate?: string | null
+  description?: string | null
+}
+
 export interface CaseSummaryResponse {
   id: number
   caseNumber: string

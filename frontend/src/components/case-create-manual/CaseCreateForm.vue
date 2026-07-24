@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +15,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -24,14 +24,17 @@ import {
 import SafeIcon from '@/components/common/SafeIcon.vue'
 import { CASE_STATUS_OPTIONS, CASE_STATUS_VALUES } from '@/constants/caseStatus'
 import { MOCK_USERS, UserRole } from '@/data/user'
+import { createCase, DuplicateCaseNumberError } from '@/services/caseService'
+import type { CaseCreateRequest } from '@/types/case'
 
 // Validation schema
 const validationSchema = z.object({
-  caseNumber: z.string().min(1, '案号不能为空').min(5, '案号至少5个字符'),
-  courtName: z.string().min(1, '法院名称不能为空'),
-  plaintiff: z.string().min(1, '原告/申请人不能为空'),
-  defendant: z.string().min(1, '被告/被申请人不能为空'),
-  caseCause: z.string().min(1, '案由不能为空'),
+  caseNumber: z.string().trim().min(1, '案号不能为空').min(5, '案号至少5个字符').max(100, '案号不能超过100个字符'),
+  caseName: z.string().trim().min(1, '案件名称不能为空').max(255, '案件名称不能超过255个字符'),
+  courtName: z.string().trim().max(255, '法院名称不能超过255个字符').optional(),
+  plaintiff: z.string().trim().min(1, '原告/申请人不能为空').max(255, '原告/申请人不能超过255个字符'),
+  defendant: z.string().trim().min(1, '被告/被申请人不能为空').max(255, '被告/被申请人不能超过255个字符'),
+  caseCause: z.string().trim().max(255, '案由不能超过255个字符').optional(),
   status: z.enum(CASE_STATUS_VALUES, {
     required_error: '案件阶段不能为空',
     invalid_type_error: '请选择支持的案件阶段',
@@ -43,10 +46,11 @@ const validationSchema = z.object({
   description: z.string().optional(),
 })
 
-const { handleSubmit, isSubmitting } = useForm({
-  validationSchema,
+const { handleSubmit, isSubmitting, setFieldError } = useForm({
+  validationSchema: toTypedSchema(validationSchema),
   initialValues: {
     caseNumber: '',
+    caseName: '',
     courtName: '',
     plaintiff: '',
     defendant: '',
@@ -60,6 +64,8 @@ const { handleSubmit, isSubmitting } = useForm({
   },
 })
 
+const errorMessage = ref('')
+
 // Get lead attorneys list
 const leadAttorneys = computed(() => {
   return MOCK_USERS.filter(u => u.role === UserRole.LeadAttorney)
@@ -67,50 +73,52 @@ const leadAttorneys = computed(() => {
 
 // Handle form submission
 const onSubmit = handleSubmit(async (values) => {
+  errorMessage.value = ''
+  const leadLawyer = leadAttorneys.value.find(
+    attorney => attorney.id === values.leadAttorneyId,
+  )
+  if (!leadLawyer) {
+    setFieldError('leadAttorneyId', '请选择有效的主办律师')
+    return
+  }
+
+  const request: CaseCreateRequest = {
+    caseNumber: values.caseNumber,
+    caseName: values.caseName,
+    status: values.status,
+    courtName: values.courtName || null,
+    caseCause: values.caseCause || null,
+    plaintiff: values.plaintiff,
+    defendant: values.defendant,
+    leadLawyerName: leadLawyer.name,
+    filingDate: values.filingDate || null,
+    hearingDate: values.hearingDate || null,
+    judgmentDate: values.judgmentDate || null,
+    description: values.description?.trim() || null,
+  }
+
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // Prepare backend-aligned values for the future API integration ticket.
-    const newCase = {
-      id: `C${Date.now()}`,
-      caseNumber: values.caseNumber,
-      courtName: values.courtName,
-      plaintiff: values.plaintiff,
-      defendant: values.defendant,
-      caseCause: values.caseCause,
-      status: values.status,
-      leadAttorneyId: values.leadAttorneyId,
-      coAttorneysIds: [],
-      filingDate: values.filingDate || null,
-      hearingDate: values.hearingDate || null,
-      judgmentDate: values.judgmentDate || null,
-      tags: [],
-      description: values.description,
-    }
-    
-    console.log('New case created:', newCase)
-    
-    // Redirect to case list
+    await createCase(request)
+
     if (typeof window !== 'undefined') {
-      window.location.href = './case-list-view.html'
+      window.location.href = '/case-list-view.html'
     }
   } catch (error) {
-    console.error('Failed to create case:', error)
+    errorMessage.value = error instanceof DuplicateCaseNumberError
+      ? '该案号已存在，请检查后重新输入。'
+      : '案件创建失败，请确认后端服务可用后重试。'
   }
 })
 
-const isLoading = ref(false)
-
 const handleCancel = () => {
   if (typeof window !== 'undefined') {
-    window.location.href = './case-list-view.html'
+    window.location.href = '/case-list-view.html'
   }
 }
 </script>
 
 <template>
-  <Form @submit="onSubmit" class="space-y-6">
+  <form class="space-y-6" @submit="onSubmit">
     <!-- Basic Information Section -->
     <div class="space-y-4">
       <h3 class="text-lg font-semibold flex items-center gap-2">
@@ -134,10 +142,25 @@ const handleCancel = () => {
           </FormItem>
         </FormField>
 
+        <!-- Case Name -->
+        <FormField v-slot="{ componentField }" name="caseName">
+          <FormItem>
+            <FormLabel>案件名称 <span class="text-destructive">*</span></FormLabel>
+            <FormControl>
+              <Input
+                v-bind="componentField"
+                placeholder="例如：张三诉某公司劳动争议案"
+                type="text"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+
         <!-- Court Name -->
         <FormField v-slot="{ componentField }" name="courtName">
           <FormItem>
-            <FormLabel>法院名称 <span class="text-destructive">*</span></FormLabel>
+            <FormLabel>法院名称</FormLabel>
             <FormControl>
               <Input
                 v-bind="componentField"
@@ -182,7 +205,7 @@ const handleCancel = () => {
         <!-- Case Cause -->
         <FormField v-slot="{ componentField }" name="caseCause">
           <FormItem>
-            <FormLabel>案由 <span class="text-destructive">*</span></FormLabel>
+            <FormLabel>案由</FormLabel>
             <FormControl>
               <Input
                 v-bind="componentField"
@@ -314,6 +337,14 @@ const handleCancel = () => {
       </FormField>
     </div>
 
+    <div
+      v-if="errorMessage"
+      role="alert"
+      class="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+    >
+      {{ errorMessage }}
+    </div>
+
     <!-- Action Buttons -->
     <div class="flex gap-3 justify-end pt-6 border-t">
       <Button
@@ -333,5 +364,5 @@ const handleCancel = () => {
         {{ isSubmitting ? '保存中...' : '保存案件' }}
       </Button>
     </div>
-  </Form>
+  </form>
 </template>

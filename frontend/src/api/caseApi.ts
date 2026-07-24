@@ -1,5 +1,6 @@
 import type {
   CaseDetailResponse,
+  CaseCreateRequest,
   CaseListResponse,
   CaseSearchCriteria,
 } from '@/types/case'
@@ -10,6 +11,13 @@ export class CaseNotFoundError extends Error {
   constructor(caseId: number) {
     super(`Case ${caseId} was not found`)
     this.name = 'CaseNotFoundError'
+  }
+}
+
+export class CaseConflictError extends Error {
+  constructor() {
+    super('Case number already exists')
+    this.name = 'CaseConflictError'
   }
 }
 
@@ -45,6 +53,28 @@ export async function fetchCaseById(caseId: number): Promise<CaseDetailResponse>
 
   if (!response.ok) {
     throw new Error(`Failed to fetch case ${caseId}: HTTP ${response.status}`)
+  }
+
+  return response.json() as Promise<CaseDetailResponse>
+}
+
+export async function postCase(
+  request: CaseCreateRequest,
+): Promise<CaseDetailResponse> {
+  const response = await fetch(CASES_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+
+  if (response.status === 409) {
+    throw new CaseConflictError()
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to create case: HTTP ${response.status}`)
   }
 
   return response.json() as Promise<CaseDetailResponse>

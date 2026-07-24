@@ -194,3 +194,5 @@ The frontend may later present both operations as one user journey. File storage
 - Define an index strategy based on future query patterns.
 - Define an optimistic locking strategy before supporting concurrent editing.
 - Define a timezone policy for persistence timestamps.
+- After the User domain is finalized, replace the temporary lead-lawyer dropdown with a searchable system-user selector. The backend must validate that the selected user exists, is active, and is eligible to lead cases; decide the user relationship and retained lawyer-name snapshot together with the supporting-member model.
+- Add a Case archive/unarchive workflow, a way to discover archived cases, and a clear archived indicator on Case Detail. The default Case List should continue to exclude archived cases.

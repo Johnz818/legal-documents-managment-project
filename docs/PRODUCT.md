@@ -346,7 +346,7 @@ Case List displays live scalar case information and supports API-backed filterin
 
 Case Detail displays live scalar case information. Its documents and reminders remain mock-backed, and supporting members are shown as not yet available. Tags and supporting members are not synthesized from legacy case mocks.
 
-The backend can create a Case from the approved scalar model. The existing manual Case creation page is not yet connected to this write API.
+The manual Case creation page submits the approved scalar model to the backend Case creation API. Lead lawyers still come from the temporary frontend user dataset and are persisted as name snapshots until the User domain is implemented.
 
 Legacy mock models must not automatically be treated as backend entities. Each feature should define and approve its persistence and API contract during its own vertical-slice ticket.
 
@@ -358,14 +358,14 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 - View the case list using live case data.
 - View case details using live case data.
 - Find cases using approved lookup criteria and list filters.
+- Create and persist a new case through the manual creation workflow.
 
 ### Planned user journeys
 
-1. Create and persist a new case through the case creation workflow.
-2. Upload PDF or Word documents against an existing case.
-3. Assign user-backed supporting members and organize cases with tags.
-4. Work with case-related documents and reminders using live data.
-5. Access case capabilities through authenticated and authorized user accounts.
+1. Upload PDF or Word documents against an existing case.
+2. Assign user-backed supporting members and organize cases with tags.
+3. Work with case-related documents and reminders using live data.
+4. Access case capabilities through authenticated and authorized user accounts.
 
 ## Product Rules
 
@@ -381,6 +381,5 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 - Case List bulk actions are not connected to backend capabilities.
 - Case tags and supporting members are not yet represented by backend relationship models or APIs.
 - Case-related documents and reminders remain mock-backed.
-- Case creation is not connected to the backend.
 - Authentication and authorization are not implemented.
 - Audit-log behavior is represented in navigation and permissions but is not implemented.
