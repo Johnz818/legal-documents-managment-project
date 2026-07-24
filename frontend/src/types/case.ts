@@ -2,6 +2,10 @@ export type CaseStatusCode =
   | 'PENDING_FILING'
   | 'PRE_TRIAL_PREPARATION'
   | 'IN_TRIAL'
+  | 'JUDGMENT_PENDING_APPEAL'
+  | 'APPEAL_IN_PROGRESS'
+  | 'FINAL_JUDGMENT'
+  | 'IN_ENFORCEMENT'
   | 'CLOSED'
 
 export interface CaseSearchCriteria {

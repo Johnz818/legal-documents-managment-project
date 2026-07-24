@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import SafeIcon from '@/components/common/SafeIcon.vue'
-import { CaseStage, MOCK_CASE_TAGS, type CaseModel } from '@/data/case'
+import { CASE_STATUS_OPTIONS, CASE_STATUS_VALUES } from '@/constants/caseStatus'
 import { MOCK_USERS, UserRole } from '@/data/user'
 
 // Validation schema
@@ -32,7 +32,10 @@ const validationSchema = z.object({
   plaintiff: z.string().min(1, '原告/申请人不能为空'),
   defendant: z.string().min(1, '被告/被申请人不能为空'),
   caseCause: z.string().min(1, '案由不能为空'),
-  caseStage: z.string().min(1, '案件阶段不能为空'),
+  status: z.enum(CASE_STATUS_VALUES, {
+    required_error: '案件阶段不能为空',
+    invalid_type_error: '请选择支持的案件阶段',
+  }),
   leadAttorneyId: z.string().min(1, '主办律师不能为空'),
   filingDate: z.string().optional(),
   hearingDate: z.string().optional(),
@@ -48,7 +51,7 @@ const { handleSubmit, isSubmitting } = useForm({
     plaintiff: '',
     defendant: '',
     caseCause: '',
-    caseStage: '',
+    status: undefined,
     leadAttorneyId: '',
     filingDate: '',
     hearingDate: '',
@@ -62,26 +65,21 @@ const leadAttorneys = computed(() => {
   return MOCK_USERS.filter(u => u.role === UserRole.LeadAttorney)
 })
 
-// Get case stages
-const caseStages = computed(() => {
-  return Object.values(CaseStage)
-})
-
 // Handle form submission
 const onSubmit = handleSubmit(async (values) => {
   try {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500))
     
-    // Create new case object
-    const newCase: CaseModel = {
+    // Prepare backend-aligned values for the future API integration ticket.
+    const newCase = {
       id: `C${Date.now()}`,
       caseNumber: values.caseNumber,
       courtName: values.courtName,
       plaintiff: values.plaintiff,
       defendant: values.defendant,
       caseCause: values.caseCause,
-      caseStage: values.caseStage as CaseStage,
+      status: values.status,
       leadAttorneyId: values.leadAttorneyId,
       coAttorneysIds: [],
       filingDate: values.filingDate || null,
@@ -197,7 +195,7 @@ const handleCancel = () => {
         </FormField>
 
         <!-- Case Stage -->
-        <FormField v-slot="{ componentField }" name="caseStage">
+        <FormField v-slot="{ componentField }" name="status">
           <FormItem>
             <FormLabel>案件阶段 <span class="text-destructive">*</span></FormLabel>
             <Select v-bind="componentField">
@@ -207,8 +205,12 @@ const handleCancel = () => {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem v-for="stage in caseStages" :key="stage" :value="stage">
-                  {{ stage }}
+                <SelectItem
+                  v-for="option in CASE_STATUS_OPTIONS"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
                 </SelectItem>
               </SelectContent>
             </Select>

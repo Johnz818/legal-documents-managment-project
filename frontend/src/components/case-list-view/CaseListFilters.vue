@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import SafeIcon from '@/components/common/SafeIcon.vue'
+import { CASE_STATUS_OPTIONS } from '@/constants/caseStatus'
 import type { CaseSearchCriteria, CaseStatusCode } from '@/types/case'
 
 interface Props {
@@ -28,13 +29,6 @@ const caseNumberPrefix = ref('')
 const caseNamePrefix = ref('')
 const selectedStatus = ref<CaseStatusCode | 'ALL'>('ALL')
 const leadLawyerName = ref('')
-
-const statusOptions: Array<{ value: CaseStatusCode; label: string }> = [
-  { value: 'PENDING_FILING', label: '待立案' },
-  { value: 'PRE_TRIAL_PREPARATION', label: '审理准备' },
-  { value: 'IN_TRIAL', label: '审理中' },
-  { value: 'CLOSED', label: '已结案' },
-]
 
 const hasActiveFilters = computed(() => {
   return Boolean(
@@ -113,7 +107,7 @@ const resetFilters = () => {
           <SelectContent>
             <SelectItem value="ALL">全部阶段</SelectItem>
             <SelectItem
-              v-for="option in statusOptions"
+              v-for="option in CASE_STATUS_OPTIONS"
               :key="option.value"
               :value="option.value"
             >
