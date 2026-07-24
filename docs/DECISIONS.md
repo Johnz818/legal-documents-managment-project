@@ -53,11 +53,85 @@ The following core fields are optional so an incomplete or pre-filing case can b
 - judgment date
 - description
 
-Case number is stored as a string and remains exactly unique. Query use cases may support matching by part of a case number without changing its persisted type or uniqueness rule.
+Case number is stored as a string and remains exactly unique. Its lookup and future structured-filtering strategy is defined in D-005.
 
 Supporting members are intentionally deferred from the MVP Case model. A future implementation must use a separate relationship table rather than JSON, delimited text, or additional columns in `cases`. The final relationship model depends on the future User domain.
 
 Tags are also collections and require a separate relationship model in a future ticket.
+
+---
+
+## 2026-07-24
+
+### D-005
+
+Case number remains the original, exactly unique business identifier.
+
+The business format is:
+
+```text
+(收案年度) + 法院代字 + 类型代字 + 案件编号 + 号
+```
+
+Examples:
+
+- `(2016)最高法刑123号`
+- `(2016)浙01民初1号`
+
+Do not prematurely split the year, court code, case type, or sequence number into separate database columns. Current requirements need the official case number for display and basic lookup, and the complete value is the business identifier.
+
+For current lookup use cases, prefer:
+
+- exact matching;
+- prefix matching;
+- structured filtering when structured fields exist.
+
+Avoid arbitrary contains queries such as:
+
+```sql
+LIKE '%keyword%'
+```
+
+If filtering by filing year, court code, or case type becomes a requirement:
+
+1. Add explicit structured fields.
+2. Backfill existing case records.
+3. Add indexes based on demonstrated query patterns.
+
+Elasticsearch is deferred. Evaluate it only if future requirements introduce full-text or fuzzy search needs.
+
+---
+
+### D-006
+
+The MVP Case participant model uses scalar snapshots:
+
+- lead lawyer is stored as a snapshot string;
+- plaintiff or applicant is stored as one required Case field;
+- defendant or respondent is stored as one required Case field.
+
+Do not add a `supportingMembers` column or store supporting members as JSON, comma-separated text, or another delimited scalar value.
+
+After the User domain is finalized, supporting members must be modeled through a separate relationship table.
+
+---
+
+### D-007
+
+MySQL owns current Case filtering and sorting.
+
+Introduce indexes only in response to actual query patterns. Do not introduce Elasticsearch for:
+
+- basic filtering;
+- sorting;
+- exact or prefix lookup.
+
+Consider Elasticsearch in the future only for requirements such as:
+
+- full-text search;
+- fuzzy matching;
+- relevance ranking;
+- large-scale document search.
 
 ---
 
