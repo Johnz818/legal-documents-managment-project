@@ -7,7 +7,10 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -52,5 +55,67 @@ class CaseQueryServiceTest {
         assertThat(response.data()).singleElement()
                 .extracting(CaseSummaryResponse::status)
                 .isEqualTo(displayName);
+    }
+
+    @Test
+    void returnsCompleteCaseDetail() {
+        Long caseId = 42L;
+        LocalDate filingDate = LocalDate.of(2026, 1, 10);
+        LocalDate hearingDate = LocalDate.of(2026, 2, 20);
+        LocalDate judgmentDate = LocalDate.of(2026, 3, 30);
+        LocalDateTime createdAt = LocalDateTime.of(2026, 1, 1, 10, 0);
+        LocalDateTime updatedAt = LocalDateTime.of(2026, 1, 2, 11, 0);
+        when(caseRepository.findById(caseId)).thenReturn(Optional.of(caseEntity));
+        when(caseEntity.getId()).thenReturn(caseId);
+        when(caseEntity.getCaseNumber()).thenReturn("CASE-DETAIL-001");
+        when(caseEntity.getCaseName()).thenReturn("Test detail case");
+        when(caseEntity.getStatus()).thenReturn(CaseStatus.IN_TRIAL);
+        when(caseEntity.getCourtName()).thenReturn("Test court");
+        when(caseEntity.getCaseCause()).thenReturn("Contract dispute");
+        when(caseEntity.getPlaintiff()).thenReturn("Test plaintiff");
+        when(caseEntity.getDefendant()).thenReturn("Test defendant");
+        when(caseEntity.getLeadLawyerName()).thenReturn("Test lawyer");
+        when(caseEntity.getFilingDate()).thenReturn(filingDate);
+        when(caseEntity.getHearingDate()).thenReturn(hearingDate);
+        when(caseEntity.getJudgmentDate()).thenReturn(judgmentDate);
+        when(caseEntity.getDescription()).thenReturn("Test description");
+        when(caseEntity.getCreatedAt()).thenReturn(createdAt);
+        when(caseEntity.getUpdatedAt()).thenReturn(updatedAt);
+        when(caseEntity.isArchived()).thenReturn(true);
+        CaseQueryService service = new CaseQueryService(caseRepository);
+
+        Optional<CaseDetailResponse> response = service.getCaseById(caseId);
+
+        assertThat(response).contains(new CaseDetailResponse(
+                caseId,
+                "CASE-DETAIL-001",
+                "Test detail case",
+                "审理中",
+                "Test court",
+                "Contract dispute",
+                "Test plaintiff",
+                "Test defendant",
+                "Test lawyer",
+                filingDate,
+                hearingDate,
+                judgmentDate,
+                "Test description",
+                createdAt,
+                updatedAt,
+                true
+        ));
+        verify(caseRepository).findById(caseId);
+    }
+
+    @Test
+    void returnsEmptyWhenCaseDoesNotExist() {
+        Long caseId = 404L;
+        when(caseRepository.findById(caseId)).thenReturn(Optional.empty());
+        CaseQueryService service = new CaseQueryService(caseRepository);
+
+        Optional<CaseDetailResponse> response = service.getCaseById(caseId);
+
+        assertThat(response).isEmpty();
+        verify(caseRepository).findById(caseId);
     }
 }

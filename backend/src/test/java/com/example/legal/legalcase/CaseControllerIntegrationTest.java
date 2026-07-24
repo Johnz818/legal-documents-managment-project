@@ -69,7 +69,74 @@ class CaseControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[9].caseNumber").value(prefix + "2"));
     }
 
-    private void insertCase(
+    @Test
+    void returnsCompleteCaseDetail() throws Exception {
+        String caseNumber = "DETAIL-" + UUID.randomUUID();
+        Long caseId = insertCase(
+                caseNumber,
+                1,
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                false
+        );
+        jdbcTemplate.update(
+                """
+                UPDATE cases
+                SET case_cause = ?,
+                    filing_date = ?,
+                    hearing_date = ?,
+                    judgment_date = ?,
+                    description = ?
+                WHERE id = ?
+                """,
+                "Contract dispute",
+                "2026-01-10",
+                "2026-02-20",
+                "2026-03-30",
+                "Test description",
+                caseId
+        );
+
+        mockMvc.perform(get("/api/cases/{id}", caseId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(caseId))
+                .andExpect(jsonPath("$.caseNumber").value(caseNumber))
+                .andExpect(jsonPath("$.caseName").value("Test case 1"))
+                .andExpect(jsonPath("$.status").value("审理中"))
+                .andExpect(jsonPath("$.courtName").value("Test court"))
+                .andExpect(jsonPath("$.caseCause").value("Contract dispute"))
+                .andExpect(jsonPath("$.plaintiff").value("Test plaintiff"))
+                .andExpect(jsonPath("$.defendant").value("Test defendant"))
+                .andExpect(jsonPath("$.leadLawyerName").value("Test lawyer"))
+                .andExpect(jsonPath("$.filingDate").value("2026-01-10"))
+                .andExpect(jsonPath("$.hearingDate").value("2026-02-20"))
+                .andExpect(jsonPath("$.judgmentDate").value("2026-03-30"))
+                .andExpect(jsonPath("$.description").value("Test description"))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists())
+                .andExpect(jsonPath("$.archived").value(false));
+    }
+
+    @Test
+    void returnsArchivedCaseDetail() throws Exception {
+        Long caseId = insertCase(
+                "ARCHIVED-DETAIL-" + UUID.randomUUID(),
+                2,
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                true
+        );
+
+        mockMvc.perform(get("/api/cases/{id}", caseId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.archived").value(true));
+    }
+
+    @Test
+    void returnsNotFoundWhenCaseDoesNotExist() throws Exception {
+        mockMvc.perform(get("/api/cases/{id}", Long.MAX_VALUE))
+                .andExpect(status().isNotFound());
+    }
+
+    private Long insertCase(
             String caseNumber,
             int index,
             LocalDateTime timestamp,
@@ -100,6 +167,12 @@ class CaseControllerIntegrationTest {
                 timestamp,
                 timestamp,
                 archived
+        );
+
+        return jdbcTemplate.queryForObject(
+                "SELECT id FROM cases WHERE case_number = ?",
+                Long.class,
+                caseNumber
         );
     }
 }

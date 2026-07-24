@@ -1,6 +1,8 @@
 package com.example.legal.legalcase;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,5 +19,12 @@ public class CaseController {
     @GetMapping
     public CaseListResponse getCases() {
         return caseQueryService.getLatestCases();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CaseDetailResponse> getCaseById(@PathVariable Long id) {
+        return caseQueryService.getCaseById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }
