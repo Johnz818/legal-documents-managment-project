@@ -29,7 +29,11 @@ Status: `200 OK`
       "caseName": "示例案件",
       "status": "审理中",
       "courtName": "北京市第一中级人民法院",
+      "caseCause": "劳动争议",
+      "plaintiff": "张三",
       "leadLawyerName": "张律师",
+      "filingDate": "2026-07-01",
+      "hearingDate": "2026-08-15",
       "createdAt": "2026-07-23T10:00:00",
       "updatedAt": "2026-07-23T10:00:00",
       "archived": false
@@ -55,7 +59,11 @@ When no cases exist, the endpoint returns:
 | `caseName` | string | Display name of the case. |
 | `status` | string | Chinese display value for the case status. |
 | `courtName` | string or null | Court handling the case. |
+| `caseCause` | string or null | Legal cause or category of the case. |
+| `plaintiff` | string | Required plaintiff or applicant snapshot. |
 | `leadLawyerName` | string | Required lead-lawyer snapshot for the case. |
+| `filingDate` | string or null | Filing date in `YYYY-MM-DD` format. |
+| `hearingDate` | string or null | Hearing date in `YYYY-MM-DD` format. |
 | `createdAt` | string | ISO-style local date-time when the case was created. |
 | `updatedAt` | string | ISO-style local date-time when the case was last updated. |
 | `archived` | boolean | Whether the case is archived. Current list results are non-archived. |
@@ -148,3 +156,14 @@ When no case exists for the supplied ID:
 ```
 
 The endpoint does not return the JPA entity directly.
+
+### Frontend integration TODO
+
+The legacy Case Detail mock model also supplied fields that are not available from this endpoint:
+
+- Case tags.
+- Supporting lawyers or other case team members.
+- Related documents.
+- Related reminders.
+
+The documents and reminders sections remain mock-backed and normally show their existing empty states for numeric backend case IDs. Tags and supporting members are no longer synthesized from legacy case mocks. All four areas remain deferred until their relationship models and APIs are implemented.

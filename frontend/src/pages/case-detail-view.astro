@@ -5,8 +5,8 @@ import CommonHeader from '@/components/common/CommonHeader.vue'
 import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
 import CaseDetailContent from '@/components/case-detail-view/CaseDetailContent.vue'
 
-// Default case ID for SSG - will be overridden by query params on client
-const defaultCaseId = 'C2024001'
+// Static output cannot read the browser query string; the client resolves the ID after hydration.
+const defaultCaseId = ''
 ---
 
 <BaseLayout title="案件详情 - 诉讼案件管理系统">

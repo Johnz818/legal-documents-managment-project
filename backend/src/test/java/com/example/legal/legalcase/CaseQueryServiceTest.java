@@ -58,6 +58,27 @@ class CaseQueryServiceTest {
     }
 
     @Test
+    void returnsCaseListDisplayFields() {
+        LocalDate filingDate = LocalDate.of(2026, 1, 10);
+        LocalDate hearingDate = LocalDate.of(2026, 2, 20);
+        when(caseEntity.getStatus()).thenReturn(CaseStatus.IN_TRIAL);
+        when(caseEntity.getCaseCause()).thenReturn("Contract dispute");
+        when(caseEntity.getPlaintiff()).thenReturn("Test plaintiff");
+        when(caseEntity.getFilingDate()).thenReturn(filingDate);
+        when(caseEntity.getHearingDate()).thenReturn(hearingDate);
+        when(caseRepository.findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc())
+                .thenReturn(List.of(caseEntity));
+        CaseQueryService service = new CaseQueryService(caseRepository);
+
+        CaseSummaryResponse response = service.getLatestCases().data().getFirst();
+
+        assertThat(response.caseCause()).isEqualTo("Contract dispute");
+        assertThat(response.plaintiff()).isEqualTo("Test plaintiff");
+        assertThat(response.filingDate()).isEqualTo(filingDate);
+        assertThat(response.hearingDate()).isEqualTo(hearingDate);
+    }
+
+    @Test
     void returnsCompleteCaseDetail() {
         Long caseId = 42L;
         LocalDate filingDate = LocalDate.of(2026, 1, 10);

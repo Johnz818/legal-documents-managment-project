@@ -37,7 +37,11 @@ public class CaseQueryService {
                 caseEntity.getCaseName(),
                 caseEntity.getStatus().getDisplayName(),
                 caseEntity.getCourtName(),
+                caseEntity.getCaseCause(),
+                caseEntity.getPlaintiff(),
                 caseEntity.getLeadLawyerName(),
+                caseEntity.getFilingDate(),
+                caseEntity.getHearingDate(),
                 caseEntity.getCreatedAt(),
                 caseEntity.getUpdatedAt(),
                 caseEntity.isArchived()

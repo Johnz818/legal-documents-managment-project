@@ -62,7 +62,11 @@ class CaseControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[0].caseName").value("Test case 11"))
                 .andExpect(jsonPath("$.data[0].status").value("审理中"))
                 .andExpect(jsonPath("$.data[0].courtName").value("Test court"))
+                .andExpect(jsonPath("$.data[0].caseCause").value("Test cause"))
+                .andExpect(jsonPath("$.data[0].plaintiff").value("Test plaintiff"))
                 .andExpect(jsonPath("$.data[0].leadLawyerName").value("Test lawyer"))
+                .andExpect(jsonPath("$.data[0].filingDate").value("2026-01-10"))
+                .andExpect(jsonPath("$.data[0].hearingDate").value("2026-02-20"))
                 .andExpect(jsonPath("$.data[0].createdAt").exists())
                 .andExpect(jsonPath("$.data[0].updatedAt").exists())
                 .andExpect(jsonPath("$.data[0].archived").value(false))
@@ -149,21 +153,27 @@ class CaseControllerIntegrationTest {
                     case_name,
                     status,
                     court_name,
+                    case_cause,
                     plaintiff,
                     defendant,
                     lead_lawyer_name,
+                    filing_date,
+                    hearing_date,
                     created_at,
                     updated_at,
                     archived
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 caseNumber,
                 "Test case " + index,
                 "IN_TRIAL",
                 "Test court",
+                "Test cause",
                 "Test plaintiff",
                 "Test defendant",
                 "Test lawyer",
+                "2026-01-10",
+                "2026-02-20",
                 timestamp,
                 timestamp,
                 archived

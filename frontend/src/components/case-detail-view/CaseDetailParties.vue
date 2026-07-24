@@ -4,10 +4,10 @@ import { ref } from 'vue'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { CaseModel } from '@/data/case'
+import type { CaseDetailResponse } from '@/types/case'
 
 interface Props {
-  caseData: CaseModel
+  caseData: CaseDetailResponse
   isEditing: boolean
 }
 
