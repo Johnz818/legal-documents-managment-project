@@ -55,7 +55,7 @@ The following core fields are optional so an incomplete or pre-filing case can b
 
 Case number is stored as a string and remains exactly unique. Its lookup and future structured-filtering strategy is defined in D-005.
 
-Supporting members are intentionally deferred from the MVP Case model. A future implementation must use a separate relationship table rather than JSON, delimited text, or additional columns in `cases`. The final relationship model depends on the future User domain.
+Participant snapshot storage and the deferred supporting-member relationship are defined in D-006.
 
 Tags are also collections and require a separate relationship model in a future ticket.
 
@@ -132,6 +132,39 @@ Consider Elasticsearch in the future only for requirements such as:
 - fuzzy matching;
 - relevance ranking;
 - large-scale document search.
+
+---
+
+### D-008
+
+Case List and Case Detail are independent read-only API capabilities.
+
+- Case List returns the latest non-archived cases for reusable list use cases.
+- Case Detail retrieves one case by its current numeric identifier.
+- Both APIs return dedicated response models rather than exposing the JPA entity.
+- The frontend uses API contract types that remain separate from legacy mock models.
+
+The current Case APIs expose scalar case data only. Tags, supporting members, related documents, and related reminders must not be inferred from legacy Case mock data.
+
+Documents and reminders may remain mock-backed in their existing frontend sections until their domains are implemented. Tags and supporting members remain deferred until their relationship models are defined.
+
+Authorization for Case Detail access will be introduced with the future authentication and authorization capability.
+
+---
+
+### D-009
+
+Deliver the remaining Case capabilities as incremental user-journey slices.
+
+The planned sequence is:
+
+1. Add Case lookup and filtering using the rules in D-005 and D-007, then connect the Case List filters to that capability.
+2. Add the Case creation workflow using the approved core Case model in D-004.
+3. Finalize the User domain before introducing supporting-member relationships, then introduce Case tags through a separate relationship model.
+4. Replace mock-backed Case documents and reminders after their respective domain and API contracts are approved.
+5. Introduce authentication and authorization before treating Case access as customer-secured.
+
+Each slice must preserve the separation between API contract models, persistence entities, and legacy frontend mock models.
 
 ---
 
