@@ -168,6 +168,18 @@ Each slice must preserve the separation between API contract models, persistence
 
 ---
 
+### D-010
+
+Case creation and case-document upload are separate backend capabilities.
+
+- Create the scalar Case record first.
+- Upload PDF or Word documents only after the Case has a persistent identifier.
+- Do not combine Case JSON fields and binary document content into one persistence transaction.
+
+The frontend may later present both operations as one user journey. File storage, metadata, size limits, content validation, malware scanning, and download authorization must be decided in the future case-document ticket.
+
+---
+
 ## Future considerations (TODO)
 
 - Evaluate Flyway compatibility with MySQL 9.7.

@@ -193,3 +193,79 @@ The legacy Case Detail mock model also supplied fields that are not available fr
 - Related reminders.
 
 The documents and reminders sections remain mock-backed and normally show their existing empty states for numeric backend case IDs. Tags and supporting members are no longer synthesized from legacy case mocks. All four areas remain deferred until their relationship models and APIs are implemented.
+
+## Create case
+
+### `POST /api/cases`
+
+Creates one non-archived case using the approved core Case model.
+
+### Request
+
+Content type:
+
+```text
+application/json
+```
+
+Example:
+
+```json
+{
+  "caseNumber": "(2026)沪0115民初1001号",
+  "caseName": "张三诉某公司劳动争议案",
+  "status": "IN_TRIAL",
+  "courtName": "上海市浦东新区人民法院",
+  "caseCause": "劳动争议",
+  "plaintiff": "张三",
+  "defendant": "某公司",
+  "leadLawyerName": "李律师",
+  "filingDate": "2026-07-01",
+  "hearingDate": "2026-08-15",
+  "judgmentDate": null,
+  "description": "劳动合同解除争议"
+}
+```
+
+Required fields:
+
+- `caseNumber`
+- `caseName`
+- `status`
+- `plaintiff`
+- `defendant`
+- `leadLawyerName`
+
+Optional fields:
+
+- `courtName`
+- `caseCause`
+- `filingDate`
+- `hearingDate`
+- `judgmentDate`
+- `description`
+
+Dates use `YYYY-MM-DD`. Status uses one of the backend enum values documented by the Case List endpoint.
+
+The client cannot supply the database ID, creation or update timestamps, or archived state. A newly created case is always non-archived.
+
+### Successful response
+
+Status: `201 Created`
+
+The `Location` response header identifies the new Case Detail resource:
+
+```text
+Location: http://localhost:8080/api/cases/1
+```
+
+The response body uses the complete Case Detail response contract.
+
+### Error responses
+
+| Status | Meaning |
+| --- | --- |
+| `400 Bad Request` | A required value is absent or blank, a value exceeds its supported length, the status is unsupported, or a date is malformed. |
+| `409 Conflict` | The supplied case number already exists. |
+
+File upload is not part of this endpoint. Case-related PDF and Word documents will be introduced as a separate capability against an already-created Case resource.

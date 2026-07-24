@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
 
+    boolean existsByCaseNumber(String caseNumber);
+
     List<CaseEntity> findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc();
 
     @Query(value = """

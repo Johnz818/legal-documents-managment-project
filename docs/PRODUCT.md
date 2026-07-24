@@ -342,6 +342,8 @@ Case List displays live scalar case information and supports API-backed filterin
 
 Case Detail displays live scalar case information. Its documents and reminders remain mock-backed, and supporting members are shown as not yet available. Tags and supporting members are not synthesized from legacy case mocks.
 
+The backend can create a Case from the approved scalar model. The existing manual Case creation page is not yet connected to this write API.
+
 Legacy mock models must not automatically be treated as backend entities. Each feature should define and approve its persistence and API contract during its own vertical-slice ticket.
 
 ## Product Roadmap
@@ -356,9 +358,10 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 ### Planned user journeys
 
 1. Create and persist a new case through the case creation workflow.
-2. Assign user-backed supporting members and organize cases with tags.
-3. Work with case-related documents and reminders using live data.
-4. Access case capabilities through authenticated and authorized user accounts.
+2. Upload PDF or Word documents against an existing case.
+3. Assign user-backed supporting members and organize cases with tags.
+4. Work with case-related documents and reminders using live data.
+5. Access case capabilities through authenticated and authorized user accounts.
 
 ## Product Rules
 

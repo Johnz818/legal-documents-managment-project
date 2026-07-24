@@ -1,10 +1,15 @@
 package com.example.legal.legalcase;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -14,6 +19,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -25,11 +32,17 @@ class CaseControllerIntegrationTest {
 
     private final MockMvc mockMvc;
     private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    CaseControllerIntegrationTest(MockMvc mockMvc, JdbcTemplate jdbcTemplate) {
+    CaseControllerIntegrationTest(
+            MockMvc mockMvc,
+            JdbcTemplate jdbcTemplate,
+            ObjectMapper objectMapper
+    ) {
         this.mockMvc = mockMvc;
         this.jdbcTemplate = jdbcTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @BeforeEach
@@ -240,6 +253,157 @@ class CaseControllerIntegrationTest {
     void returnsNotFoundWhenCaseDoesNotExist() throws Exception {
         mockMvc.perform(get("/api/cases/{id}", Long.MAX_VALUE))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void createsCaseWithAllSupportedFields() throws Exception {
+        String caseNumber = "CREATE-" + UUID.randomUUID();
+        ObjectNode request = validCreateRequest(caseNumber);
+        request.put("courtName", "上海市浦东新区人民法院");
+        request.put("caseCause", "劳动争议");
+        request.put("filingDate", "2026-07-01");
+        request.put("hearingDate", "2026-08-15");
+        request.put("judgmentDate", "2026-09-20");
+        request.put("description", "案件说明");
+
+        mockMvc.perform(post("/api/cases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(request)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string(
+                        "Location",
+                        org.hamcrest.Matchers.matchesPattern(".*/api/cases/\\d+")
+                ))
+                .andExpect(jsonPath("$.id").isNumber())
+                .andExpect(jsonPath("$.caseNumber").value(caseNumber))
+                .andExpect(jsonPath("$.caseName").value("张三诉某公司劳动争议案"))
+                .andExpect(jsonPath("$.status").value("审理中"))
+                .andExpect(jsonPath("$.courtName").value("上海市浦东新区人民法院"))
+                .andExpect(jsonPath("$.caseCause").value("劳动争议"))
+                .andExpect(jsonPath("$.plaintiff").value("张三"))
+                .andExpect(jsonPath("$.defendant").value("某公司"))
+                .andExpect(jsonPath("$.leadLawyerName").value("李律师"))
+                .andExpect(jsonPath("$.filingDate").value("2026-07-01"))
+                .andExpect(jsonPath("$.hearingDate").value("2026-08-15"))
+                .andExpect(jsonPath("$.judgmentDate").value("2026-09-20"))
+                .andExpect(jsonPath("$.description").value("案件说明"))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists())
+                .andExpect(jsonPath("$.archived").value(false));
+
+        Integer persisted = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM cases WHERE case_number = ? AND archived = FALSE",
+                Integer.class,
+                caseNumber
+        );
+        org.assertj.core.api.Assertions.assertThat(persisted).isEqualTo(1);
+    }
+
+    @Test
+    void createsCaseWithoutOptionalFields() throws Exception {
+        String caseNumber = "CREATE-MINIMAL-" + UUID.randomUUID();
+
+        mockMvc.perform(post("/api/cases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(validCreateRequest(caseNumber))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.courtName").isEmpty())
+                .andExpect(jsonPath("$.caseCause").isEmpty())
+                .andExpect(jsonPath("$.filingDate").isEmpty())
+                .andExpect(jsonPath("$.hearingDate").isEmpty())
+                .andExpect(jsonPath("$.judgmentDate").isEmpty())
+                .andExpect(jsonPath("$.description").isEmpty());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "caseNumber",
+            "caseName",
+            "status",
+            "plaintiff",
+            "defendant",
+            "leadLawyerName"
+    })
+    void returnsBadRequestWhenRequiredFieldIsMissing(String fieldName) throws Exception {
+        ObjectNode request = validCreateRequest("CREATE-MISSING-" + UUID.randomUUID());
+        request.remove(fieldName);
+
+        mockMvc.perform(post("/api/cases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "caseNumber",
+            "caseName",
+            "plaintiff",
+            "defendant",
+            "leadLawyerName"
+    })
+    void returnsBadRequestWhenRequiredTextIsBlank(String fieldName) throws Exception {
+        ObjectNode request = validCreateRequest("CREATE-BLANK-" + UUID.randomUUID());
+        request.put(fieldName, " ");
+
+        mockMvc.perform(post("/api/cases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void returnsBadRequestForInvalidCreateStatus() throws Exception {
+        ObjectNode request = validCreateRequest("CREATE-STATUS-" + UUID.randomUUID());
+        request.put("status", "UNKNOWN");
+
+        mockMvc.perform(post("/api/cases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void returnsBadRequestForMalformedCreateDate() throws Exception {
+        ObjectNode request = validCreateRequest("CREATE-DATE-" + UUID.randomUUID());
+        request.put("filingDate", "07/24/2026");
+
+        mockMvc.perform(post("/api/cases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void returnsBadRequestWhenCaseNumberExceedsColumnLength() throws Exception {
+        ObjectNode request = validCreateRequest("C".repeat(101));
+
+        mockMvc.perform(post("/api/cases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void returnsConflictForDuplicateCaseNumber() throws Exception {
+        String caseNumber = "CREATE-DUPLICATE-" + UUID.randomUUID();
+        insertCase(caseNumber, 1, LocalDateTime.of(2026, 1, 1, 10, 0), false);
+
+        mockMvc.perform(post("/api/cases")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(validCreateRequest(caseNumber))))
+                .andExpect(status().isConflict());
+    }
+
+    private ObjectNode validCreateRequest(String caseNumber) {
+        ObjectNode request = objectMapper.createObjectNode();
+        request.put("caseNumber", caseNumber);
+        request.put("caseName", "张三诉某公司劳动争议案");
+        request.put("status", "IN_TRIAL");
+        request.put("plaintiff", "张三");
+        request.put("defendant", "某公司");
+        request.put("leadLawyerName", "李律师");
+        return request;
     }
 
     private Long insertCase(
