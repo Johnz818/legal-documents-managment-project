@@ -24,3 +24,7 @@ export const CASE_STATUS_OPTIONS: ReadonlyArray<{
   { value: 'IN_ENFORCEMENT', label: '执行中' },
   { value: 'CLOSED', label: '已结案' },
 ]
+
+export function getCaseStatusCode(displayLabel: string): CaseStatusCode | undefined {
+  return CASE_STATUS_OPTIONS.find(option => option.label === displayLabel)?.value
+}

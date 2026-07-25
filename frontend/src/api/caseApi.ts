@@ -3,6 +3,7 @@ import type {
   CaseCreateRequest,
   CaseListResponse,
   CaseSearchCriteria,
+  CaseUpdateRequest,
 } from '@/types/case'
 
 const CASES_ENDPOINT = 'http://localhost:8080/api/cases'
@@ -75,6 +76,33 @@ export async function postCase(
 
   if (!response.ok) {
     throw new Error(`Failed to create case: HTTP ${response.status}`)
+  }
+
+  return response.json() as Promise<CaseDetailResponse>
+}
+
+export async function putCase(
+  caseId: number,
+  request: CaseUpdateRequest,
+): Promise<CaseDetailResponse> {
+  const response = await fetch(`${CASES_ENDPOINT}/${caseId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+
+  if (response.status === 404) {
+    throw new CaseNotFoundError(caseId)
+  }
+
+  if (response.status === 409) {
+    throw new CaseConflictError()
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to update case ${caseId}: HTTP ${response.status}`)
   }
 
   return response.json() as Promise<CaseDetailResponse>

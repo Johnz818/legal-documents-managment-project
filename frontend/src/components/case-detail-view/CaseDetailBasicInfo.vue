@@ -1,9 +1,7 @@
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -12,6 +10,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { CASE_STATUS_OPTIONS } from '@/constants/caseStatus'
 import type { CaseDetailResponse } from '@/types/case'
 
 interface Props {
@@ -19,18 +25,7 @@ interface Props {
   isEditing: boolean
 }
 
-const props = defineProps<Props>()
-
-const formData = ref({
-  caseNumber: props.caseData.caseNumber,
-  caseName: props.caseData.caseName,
-  courtName: props.caseData.courtName ?? '',
-  caseCause: props.caseData.caseCause ?? '',
-  status: props.caseData.status,
-  description: props.caseData.description ?? '',
-})
-
-const statusOptions = ['待立案', '审理准备', '审理中', '已结案']
+defineProps<Props>()
 
 const formatDateTime = (dateTime: string) => {
   return new Date(dateTime).toLocaleString('zh-CN')
@@ -45,76 +40,105 @@ const formatDateTime = (dateTime: string) => {
     <CardContent class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Case Number -->
-        <div class="space-y-2">
-          <Label for="caseNumber">案号</Label>
-          <Input
-            id="caseNumber"
-            v-model="formData.caseNumber"
-            :disabled="!isEditing"
-            placeholder="输入案号"
-          />
-        </div>
+        <FormField v-slot="{ componentField }" name="caseNumber">
+          <FormItem>
+            <FormLabel>案号 <span class="text-destructive">*</span></FormLabel>
+            <FormControl>
+              <Input
+                v-bind="componentField"
+                :disabled="!isEditing"
+                placeholder="输入案号"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
         <!-- Case Name -->
-        <div class="space-y-2">
-          <Label for="caseName">案件名称</Label>
-          <Input
-            id="caseName"
-            v-model="formData.caseName"
-            :disabled="!isEditing"
-            placeholder="输入案件名称"
-          />
-        </div>
+        <FormField v-slot="{ componentField }" name="caseName">
+          <FormItem>
+            <FormLabel>案件名称 <span class="text-destructive">*</span></FormLabel>
+            <FormControl>
+              <Input
+                v-bind="componentField"
+                :disabled="!isEditing"
+                placeholder="输入案件名称"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
         <!-- Court Name -->
-        <div class="space-y-2">
-          <Label for="courtName">法院名称</Label>
-          <Input
-            id="courtName"
-            v-model="formData.courtName"
-            :disabled="!isEditing"
-            placeholder="输入法院名称"
-          />
-        </div>
+        <FormField v-slot="{ componentField }" name="courtName">
+          <FormItem>
+            <FormLabel>法院名称</FormLabel>
+            <FormControl>
+              <Input
+                v-bind="componentField"
+                :disabled="!isEditing"
+                placeholder="输入法院名称"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
         <!-- Case Cause -->
-        <div class="space-y-2">
-          <Label for="caseCause">案由</Label>
-          <Input
-            id="caseCause"
-            v-model="formData.caseCause"
-            :disabled="!isEditing"
-            placeholder="输入案由"
-          />
-        </div>
+        <FormField v-slot="{ componentField }" name="caseCause">
+          <FormItem>
+            <FormLabel>案由</FormLabel>
+            <FormControl>
+              <Input
+                v-bind="componentField"
+                :disabled="!isEditing"
+                placeholder="输入案由"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
         <!-- Case Stage -->
-        <div class="space-y-2">
-          <Label for="caseStage">案件阶段</Label>
-          <Select v-model="formData.status" :disabled="!isEditing">
-            <SelectTrigger id="caseStage">
-              <SelectValue placeholder="选择案件阶段" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="status in statusOptions" :key="status" :value="status">
-                {{ status }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <FormField v-slot="{ componentField }" name="status">
+          <FormItem>
+            <FormLabel>案件阶段 <span class="text-destructive">*</span></FormLabel>
+            <Select v-bind="componentField" :disabled="!isEditing">
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="选择案件阶段" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem
+                  v-for="option in CASE_STATUS_OPTIONS"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        </FormField>
       </div>
 
       <!-- Description -->
-      <div class="space-y-2">
-        <Label for="description">案件描述</Label>
-        <Textarea
-          id="description"
-          v-model="formData.description"
-          :disabled="!isEditing"
-          placeholder="输入案件描述信息"
-          class="min-h-24"
-        />
-      </div>
+      <FormField v-slot="{ componentField }" name="description">
+        <FormItem>
+          <FormLabel>案件描述</FormLabel>
+          <FormControl>
+            <Textarea
+              v-bind="componentField"
+              :disabled="!isEditing"
+              placeholder="输入案件描述信息"
+              class="min-h-24"
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      </FormField>
 
       <div class="grid grid-cols-1 gap-4 border-t pt-4 text-sm text-muted-foreground md:grid-cols-2">
         <p>创建时间：{{ formatDateTime(caseData.createdAt) }}</p>

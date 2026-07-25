@@ -30,6 +30,10 @@ export interface CaseCreateRequest {
   description?: string | null
 }
 
+export interface CaseUpdateRequest extends CaseCreateRequest {
+  version: number
+}
+
 export interface CaseSummaryResponse {
   id: number
   caseNumber: string
@@ -67,4 +71,5 @@ export interface CaseDetailResponse {
   createdAt: string
   updatedAt: string
   archived: boolean
+  version: number
 }

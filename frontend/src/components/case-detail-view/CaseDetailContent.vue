@@ -1,6 +1,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,8 +16,15 @@ import CaseDetailDates from '@/components/case-detail-view/CaseDetailDates.vue'
 import CaseDetailDocuments from '@/components/case-detail-view/CaseDetailDocuments.vue'
 import CaseDetailReminders from '@/components/case-detail-view/CaseDetailReminders.vue'
 import CaseDetailTeam from '@/components/case-detail-view/CaseDetailTeam.vue'
-import { getCaseById } from '@/services/caseService'
-import type { CaseDetailResponse } from '@/types/case'
+import {
+  CaseUpdateNotFoundError,
+  DuplicateCaseNumberError,
+  getCaseById,
+  StaleCaseVersionError,
+  updateCase,
+} from '@/services/caseService'
+import { CASE_STATUS_VALUES, getCaseStatusCode } from '@/constants/caseStatus'
+import type { CaseDetailResponse, CaseUpdateRequest } from '@/types/case'
 
 interface Props {
   caseId: string
@@ -27,10 +37,70 @@ const caseData = ref<CaseDetailResponse | null>(null)
 const isLoading = ref(true)
 const isNotFound = ref(false)
 const errorMessage = ref('')
+const updateErrorMessage = ref('')
 const isEditing = ref(false)
 const activeTab = ref('basic')
 
+const validationSchema = z.object({
+  caseNumber: z.string().trim().min(1, '案号不能为空').max(100, '案号不能超过100个字符'),
+  caseName: z.string().trim().min(1, '案件名称不能为空').max(255, '案件名称不能超过255个字符'),
+  courtName: z.string().trim().max(255, '法院名称不能超过255个字符').optional(),
+  caseCause: z.string().trim().max(255, '案由不能超过255个字符').optional(),
+  status: z.enum(CASE_STATUS_VALUES, {
+    required_error: '案件阶段不能为空',
+    invalid_type_error: '请选择支持的案件阶段',
+  }),
+  plaintiff: z.string().trim().min(1, '原告/申请人不能为空').max(255, '原告/申请人不能超过255个字符'),
+  defendant: z.string().trim().min(1, '被告/被申请人不能为空').max(255, '被告/被申请人不能超过255个字符'),
+  leadLawyerName: z.string().trim().min(1, '主办律师不能为空').max(255, '主办律师不能超过255个字符'),
+  filingDate: z.string().optional(),
+  hearingDate: z.string().optional(),
+  judgmentDate: z.string().optional(),
+  description: z.string().optional(),
+})
+
+const {
+  handleSubmit,
+  isSubmitting,
+  resetForm,
+} = useForm({
+  validationSchema: toTypedSchema(validationSchema),
+  initialValues: {
+    caseNumber: '',
+    caseName: '',
+    courtName: '',
+    caseCause: '',
+    status: undefined,
+    plaintiff: '',
+    defendant: '',
+    leadLawyerName: '',
+    filingDate: '',
+    hearingDate: '',
+    judgmentDate: '',
+    description: '',
+  },
+})
+
 const relatedCaseId = computed(() => currentCaseId.value?.toString() ?? '')
+
+const resetCaseForm = (detail: CaseDetailResponse) => {
+  resetForm({
+    values: {
+      caseNumber: detail.caseNumber,
+      caseName: detail.caseName,
+      courtName: detail.courtName ?? '',
+      caseCause: detail.caseCause ?? '',
+      status: getCaseStatusCode(detail.status),
+      plaintiff: detail.plaintiff,
+      defendant: detail.defendant,
+      leadLawyerName: detail.leadLawyerName,
+      filingDate: detail.filingDate ?? '',
+      hearingDate: detail.hearingDate ?? '',
+      judgmentDate: detail.judgmentDate ?? '',
+      description: detail.description ?? '',
+    },
+  })
+}
 
 const resolveCaseId = () => {
   const queryId = typeof window === 'undefined'
@@ -50,6 +120,8 @@ const loadCase = async () => {
   isLoading.value = true
   isNotFound.value = false
   errorMessage.value = ''
+  updateErrorMessage.value = ''
+  isEditing.value = false
   caseData.value = null
 
   const caseId = resolveCaseId()
@@ -68,6 +140,7 @@ const loadCase = async () => {
       isNotFound.value = true
     } else {
       caseData.value = result
+      resetCaseForm(result)
     }
   } catch {
     errorMessage.value = '案件详情加载失败，请确认后端服务可用后重试。'
@@ -84,15 +157,67 @@ const breadcrumbs = computed(() => [
 ])
 
 const handleEdit = () => {
+  if (caseData.value) {
+    resetCaseForm(caseData.value)
+  }
+  updateErrorMessage.value = ''
   isEditing.value = true
 }
 
-const handleSave = () => {
-  isEditing.value = false
-  // In a real app, would save to backend
-}
+const handleSave = handleSubmit(async (values) => {
+  if (currentCaseId.value === null || caseData.value === null) {
+    return
+  }
+
+  updateErrorMessage.value = ''
+  const request: CaseUpdateRequest = {
+    caseNumber: values.caseNumber,
+    caseName: values.caseName,
+    status: values.status,
+    courtName: values.courtName || null,
+    caseCause: values.caseCause || null,
+    plaintiff: values.plaintiff,
+    defendant: values.defendant,
+    leadLawyerName: values.leadLawyerName,
+    filingDate: values.filingDate || null,
+    hearingDate: values.hearingDate || null,
+    judgmentDate: values.judgmentDate || null,
+    description: values.description?.trim() || null,
+    version: caseData.value.version,
+  }
+
+  try {
+    const updatedCase = await updateCase(currentCaseId.value, request)
+    caseData.value = updatedCase
+    resetCaseForm(updatedCase)
+    isEditing.value = false
+  } catch (error) {
+    if (error instanceof DuplicateCaseNumberError) {
+      updateErrorMessage.value = '该案号已属于其他案件，请检查后重新输入。'
+    } else if (error instanceof StaleCaseVersionError) {
+      updateErrorMessage.value = '案件已被其他用户修改，请重新加载最新内容后再编辑。'
+    } else if (error instanceof CaseUpdateNotFoundError) {
+      updateErrorMessage.value = '案件已不存在，无法保存本次修改。'
+    } else {
+      updateErrorMessage.value = '案件保存失败，请确认后端服务可用后重试。'
+    }
+  }
+}, ({ errors }) => {
+  const fieldNames = Object.keys(errors)
+  if (fieldNames.some(name => ['plaintiff', 'defendant'].includes(name))) {
+    activeTab.value = 'parties'
+  } else if (fieldNames.some(name => ['filingDate', 'hearingDate', 'judgmentDate'].includes(name))) {
+    activeTab.value = 'dates'
+  } else {
+    activeTab.value = 'basic'
+  }
+})
 
 const handleCancel = () => {
+  if (caseData.value) {
+    resetCaseForm(caseData.value)
+  }
+  updateErrorMessage.value = ''
   isEditing.value = false
 }
 
@@ -134,18 +259,24 @@ const handleViewAllReminders = () => {
           <SafeIcon name="Edit" :size="16" class="mr-2" />
           编辑
         </Button>
-        <template v-else>
+        <template v-else-if="caseData && isEditing">
           <Button
             variant="default"
             size="sm"
+            :disabled="isSubmitting"
             @click="handleSave"
           >
-            <SafeIcon name="Check" :size="16" class="mr-2" />
-            保存
+            <SafeIcon
+              :name="isSubmitting ? 'Loader2' : 'Check'"
+              :size="16"
+              :class="isSubmitting ? 'mr-2 animate-spin' : 'mr-2'"
+            />
+            {{ isSubmitting ? '保存中...' : '保存' }}
           </Button>
           <Button
             variant="outline"
             size="sm"
+            :disabled="isSubmitting"
             @click="handleCancel"
           >
             取消
@@ -188,6 +319,14 @@ const handleViewAllReminders = () => {
         </div>
 
         <template v-else-if="caseData">
+        <div
+          v-if="updateErrorMessage"
+          role="alert"
+          class="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
+          {{ updateErrorMessage }}
+        </div>
+
         <!-- Case Header with Status -->
         <CaseDetailHeader
           :case-data="caseData"

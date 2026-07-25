@@ -1,9 +1,14 @@
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import type { CaseDetailResponse } from '@/types/case'
 
 interface Props {
@@ -11,13 +16,7 @@ interface Props {
   isEditing: boolean
 }
 
-const props = defineProps<Props>()
-
-const formData = ref({
-  filingDate: props.caseData.filingDate || '',
-  hearingDate: props.caseData.hearingDate || '',
-  judgmentDate: props.caseData.judgmentDate || '',
-})
+defineProps<Props>()
 </script>
 
 <template>
@@ -28,37 +27,49 @@ const formData = ref({
     <CardContent class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Filing Date -->
-        <div class="space-y-2">
-          <Label for="filingDate">立案时间</Label>
-          <Input
-            id="filingDate"
-            v-model="formData.filingDate"
-            type="date"
-            :disabled="!isEditing"
-          />
-        </div>
+        <FormField v-slot="{ componentField }" name="filingDate">
+          <FormItem>
+            <FormLabel>立案时间</FormLabel>
+            <FormControl>
+              <Input
+                v-bind="componentField"
+                type="date"
+                :disabled="!isEditing"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
         <!-- Hearing Date -->
-        <div class="space-y-2">
-          <Label for="hearingDate">开庭时间</Label>
-          <Input
-            id="hearingDate"
-            v-model="formData.hearingDate"
-            type="date"
-            :disabled="!isEditing"
-          />
-        </div>
+        <FormField v-slot="{ componentField }" name="hearingDate">
+          <FormItem>
+            <FormLabel>开庭时间</FormLabel>
+            <FormControl>
+              <Input
+                v-bind="componentField"
+                type="date"
+                :disabled="!isEditing"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
         <!-- Judgment Date -->
-        <div class="space-y-2">
-          <Label for="judgmentDate">判决时间</Label>
-          <Input
-            id="judgmentDate"
-            v-model="formData.judgmentDate"
-            type="date"
-            :disabled="!isEditing"
-          />
-        </div>
+        <FormField v-slot="{ componentField }" name="judgmentDate">
+          <FormItem>
+            <FormLabel>判决时间</FormLabel>
+            <FormControl>
+              <Input
+                v-bind="componentField"
+                type="date"
+                :disabled="!isEditing"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
       </div>
     </CardContent>
   </Card>
