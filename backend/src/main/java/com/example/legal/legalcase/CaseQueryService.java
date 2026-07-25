@@ -116,7 +116,8 @@ public class CaseQueryService {
                 caseEntity.getDescription(),
                 caseEntity.getCreatedAt(),
                 caseEntity.getUpdatedAt(),
-                caseEntity.isArchived()
+                caseEntity.isArchived(),
+                caseEntity.getVersion()
         );
     }
 }

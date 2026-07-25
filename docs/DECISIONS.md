@@ -188,11 +188,26 @@ The frontend may later present both operations as one user journey. File storage
 
 ---
 
+## 2026-07-25
+
+### D-011
+
+Case updates use full replacement of the editable scalar Case fields through `PUT /api/cases/{id}`.
+
+- The client must send the version returned by Case Detail.
+- JPA optimistic locking owns version increments.
+- An update based on a stale version returns a conflict instead of silently overwriting newer changes.
+- The Case ID, creation and update timestamps, and archived state remain server-owned.
+- Case-number corrections are allowed but exact uniqueness remains enforced.
+
+Authorization for Case updates is deferred until the authentication and authorization capability is introduced. The backend, rather than frontend visibility alone, must ultimately enforce update permission.
+
+---
+
 ## Future considerations (TODO)
 
 - Evaluate Flyway compatibility with MySQL 9.7.
 - Define an index strategy based on future query patterns.
-- Define an optimistic locking strategy before supporting concurrent editing.
 - Define a timezone policy for persistence timestamps.
 - After the User domain is finalized, replace the temporary lead-lawyer dropdown with a searchable system-user selector. The backend must validate that the selected user exists, is active, and is eligible to lead cases; decide the user relationship and retained lawyer-name snapshot together with the supporting-member model.
 - Add a Case archive/unarchive workflow, a way to discover archived cases, and a clear archived indicator on Case Detail. The default Case List should continue to exclude archived cases.

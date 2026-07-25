@@ -1,6 +1,7 @@
 package com.example.legal.legalcase;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,42 @@ public class CaseCommandService {
         }
     }
 
+    @Transactional
+    public CaseDetailResponse updateCase(Long id, CaseUpdateRequest request) {
+        CaseEntity caseEntity = caseRepository.findById(id)
+                .orElseThrow(() -> new CaseNotFoundException(id));
+
+        if (!request.version().equals(caseEntity.getVersion())) {
+            throw new StaleCaseVersionException(id);
+        }
+
+        String caseNumber = request.caseNumber().trim();
+        if (caseRepository.existsByCaseNumberAndIdNot(caseNumber, id)) {
+            throw new DuplicateCaseNumberException(caseNumber);
+        }
+
+        caseEntity.setCaseNumber(caseNumber);
+        caseEntity.setCaseName(request.caseName().trim());
+        caseEntity.setStatus(request.status());
+        caseEntity.setCourtName(normalizeOptional(request.courtName()));
+        caseEntity.setCaseCause(normalizeOptional(request.caseCause()));
+        caseEntity.setPlaintiff(request.plaintiff().trim());
+        caseEntity.setDefendant(request.defendant().trim());
+        caseEntity.setLeadLawyerName(request.leadLawyerName().trim());
+        caseEntity.setFilingDate(request.filingDate());
+        caseEntity.setHearingDate(request.hearingDate());
+        caseEntity.setJudgmentDate(request.judgmentDate());
+        caseEntity.setDescription(normalizeOptional(request.description()));
+
+        try {
+            return toResponse(caseRepository.saveAndFlush(caseEntity));
+        } catch (ObjectOptimisticLockingFailureException exception) {
+            throw new StaleCaseVersionException(id);
+        } catch (DataIntegrityViolationException exception) {
+            throw new DuplicateCaseNumberException(caseNumber);
+        }
+    }
+
     private String normalizeOptional(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -66,7 +103,8 @@ public class CaseCommandService {
                 caseEntity.getDescription(),
                 caseEntity.getCreatedAt(),
                 caseEntity.getUpdatedAt(),
-                caseEntity.isArchived()
+                caseEntity.isArchived(),
+                caseEntity.getVersion()
         );
     }
 }

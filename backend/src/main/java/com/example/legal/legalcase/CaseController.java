@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -65,8 +66,26 @@ public class CaseController {
         return ResponseEntity.created(location).body(response);
     }
 
+    @PutMapping("/{id}")
+    public CaseDetailResponse updateCase(
+            @PathVariable Long id,
+            @Valid @RequestBody CaseUpdateRequest request
+    ) {
+        return caseCommandService.updateCase(id, request);
+    }
+
     @ExceptionHandler(DuplicateCaseNumberException.class)
     public ResponseEntity<Void> handleDuplicateCaseNumber() {
+        return ResponseEntity.status(HttpStatus.CONFLICT).build();
+    }
+
+    @ExceptionHandler(CaseNotFoundException.class)
+    public ResponseEntity<Void> handleCaseNotFound() {
+        return ResponseEntity.notFound().build();
+    }
+
+    @ExceptionHandler(StaleCaseVersionException.class)
+    public ResponseEntity<Void> handleStaleCaseVersion() {
         return ResponseEntity.status(HttpStatus.CONFLICT).build();
     }
 }

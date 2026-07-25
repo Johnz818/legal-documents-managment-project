@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -73,6 +74,10 @@ public class CaseEntity {
 
     @Column(name = "archived", nullable = false)
     private boolean archived;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
 
     protected CaseEntity() {
     }
@@ -207,5 +212,9 @@ public class CaseEntity {
 
     public void setArchived(boolean archived) {
         this.archived = archived;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 }

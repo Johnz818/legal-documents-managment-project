@@ -19,6 +19,7 @@ public record CaseDetailResponse(
         String description,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        boolean archived
+        boolean archived,
+        Long version
 ) {
 }

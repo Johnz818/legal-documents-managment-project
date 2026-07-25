@@ -77,6 +77,7 @@ class CaseRepositoryIntegrationTest {
         assertThat(retrieved.getCreatedAt()).isNotNull();
         assertThat(retrieved.getUpdatedAt()).isNotNull();
         assertThat(retrieved.isArchived()).isFalse();
+        assertThat(retrieved.getVersion()).isZero();
 
         String storedStatus = jdbcTemplate.queryForObject(
                 "SELECT status FROM cases WHERE id = ?",

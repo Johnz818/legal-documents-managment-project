@@ -10,6 +10,8 @@ public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
 
     boolean existsByCaseNumber(String caseNumber);
 
+    boolean existsByCaseNumberAndIdNot(String caseNumber, Long id);
+
     List<CaseEntity> findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc();
 
     @Query(value = """

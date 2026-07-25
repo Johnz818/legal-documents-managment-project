@@ -143,6 +143,7 @@ class CaseQueryServiceTest {
         when(caseEntity.getCreatedAt()).thenReturn(createdAt);
         when(caseEntity.getUpdatedAt()).thenReturn(updatedAt);
         when(caseEntity.isArchived()).thenReturn(true);
+        when(caseEntity.getVersion()).thenReturn(3L);
         CaseQueryService service = new CaseQueryService(caseRepository);
 
         Optional<CaseDetailResponse> response = service.getCaseById(caseId);
@@ -163,7 +164,8 @@ class CaseQueryServiceTest {
                 "Test description",
                 createdAt,
                 updatedAt,
-                true
+                true,
+                3L
         ));
         verify(caseRepository).findById(caseId);
     }

@@ -152,7 +152,8 @@ Status: `200 OK`
   "description": "劳动合同解除争议",
   "createdAt": "2026-07-22T22:23:53",
   "updatedAt": "2026-07-22T22:23:53",
-  "archived": false
+  "archived": false,
+  "version": 0
 }
 ```
 
@@ -176,6 +177,7 @@ Status: `200 OK`
 | `createdAt` | string | ISO-style local creation date-time. |
 | `updatedAt` | string | ISO-style local last-update date-time. |
 | `archived` | boolean | Whether the case is archived. |
+| `version` | number | Concurrency version to send with a subsequent Case update. |
 
 ### Not found response
 
@@ -273,3 +275,55 @@ The response body uses the complete Case Detail response contract.
 | `409 Conflict` | The supplied case number already exists. |
 
 File upload is not part of this endpoint. Case-related PDF and Word documents will be introduced as a separate capability against an already-created Case resource.
+
+## Update case
+
+### `PUT /api/cases/{id}`
+
+Replaces the editable scalar fields of an existing case. It does not change the Case ID, timestamps, or archived state.
+
+### Request
+
+Content type:
+
+```text
+application/json
+```
+
+The request contains the same required and optional scalar fields as Case creation, plus the required `version` returned by Case Detail:
+
+```json
+{
+  "caseNumber": "(2026)沪0115民初1001号",
+  "caseName": "张三诉某公司劳动争议案",
+  "status": "IN_TRIAL",
+  "courtName": "上海市浦东新区人民法院",
+  "caseCause": "劳动争议",
+  "plaintiff": "张三",
+  "defendant": "某公司",
+  "leadLawyerName": "李律师",
+  "filingDate": "2026-07-01",
+  "hearingDate": null,
+  "judgmentDate": null,
+  "description": "更新后的案件说明",
+  "version": 0
+}
+```
+
+Omitted or null optional fields are cleared. Required fields, supported lengths, date formats, and status values follow the Case creation contract.
+
+### Successful response
+
+Status: `200 OK`
+
+The response uses the complete Case Detail contract and contains the incremented `version`.
+
+### Error responses
+
+| Status | Meaning |
+| --- | --- |
+| `400 Bad Request` | A required value or version is absent or invalid, a value is too long, the status is unsupported, or a date is malformed. |
+| `404 Not Found` | No case exists for the supplied ID. |
+| `409 Conflict` | The case number belongs to another case, or the submitted version is stale. |
+
+Archive/restore, file upload, and authorization are separate capabilities and are not part of this endpoint.

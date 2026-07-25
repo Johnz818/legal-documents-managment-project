@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -101,6 +102,66 @@ class CaseCommandServiceTest {
                 .isInstanceOf(DuplicateCaseNumberException.class);
     }
 
+    @Test
+    void updatesCaseAndNormalizesFields() {
+        CaseEntity caseEntity = org.mockito.Mockito.mock(CaseEntity.class);
+        CaseUpdateRequest request = updateRequest("  CASE-UPDATED-001  ", 2L);
+        when(caseRepository.findById(42L)).thenReturn(Optional.of(caseEntity));
+        when(caseEntity.getVersion()).thenReturn(2L);
+        when(caseRepository.existsByCaseNumberAndIdNot("CASE-UPDATED-001", 42L))
+                .thenReturn(false);
+        when(caseRepository.saveAndFlush(caseEntity)).thenReturn(caseEntity);
+        when(caseEntity.getStatus()).thenReturn(CaseStatus.IN_TRIAL);
+        CaseCommandService service = new CaseCommandService(caseRepository);
+
+        service.updateCase(42L, request);
+
+        verify(caseEntity).setCaseNumber("CASE-UPDATED-001");
+        verify(caseEntity).setCaseName("Updated case");
+        verify(caseEntity).setCourtName(null);
+        verify(caseEntity).setPlaintiff("Updated plaintiff");
+        verify(caseEntity).setDescription("Updated description");
+        verify(caseRepository).saveAndFlush(caseEntity);
+    }
+
+    @Test
+    void rejectsUpdateWhenCaseDoesNotExist() {
+        when(caseRepository.findById(404L)).thenReturn(Optional.empty());
+        CaseCommandService service = new CaseCommandService(caseRepository);
+
+        assertThatThrownBy(() -> service.updateCase(404L, updateRequest("CASE-404", 0L)))
+                .isInstanceOf(CaseNotFoundException.class);
+    }
+
+    @Test
+    void rejectsUpdateWithStaleVersion() {
+        CaseEntity caseEntity = org.mockito.Mockito.mock(CaseEntity.class);
+        when(caseRepository.findById(42L)).thenReturn(Optional.of(caseEntity));
+        when(caseEntity.getVersion()).thenReturn(3L);
+        CaseCommandService service = new CaseCommandService(caseRepository);
+
+        assertThatThrownBy(() -> service.updateCase(42L, updateRequest("CASE-STALE", 2L)))
+                .isInstanceOf(StaleCaseVersionException.class);
+        verify(caseRepository, never())
+                .existsByCaseNumberAndIdNot(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
+    void rejectsDuplicateCaseNumberDuringUpdate() {
+        CaseEntity caseEntity = org.mockito.Mockito.mock(CaseEntity.class);
+        when(caseRepository.findById(42L)).thenReturn(Optional.of(caseEntity));
+        when(caseEntity.getVersion()).thenReturn(0L);
+        when(caseRepository.existsByCaseNumberAndIdNot("CASE-DUPLICATE", 42L))
+                .thenReturn(true);
+        CaseCommandService service = new CaseCommandService(caseRepository);
+
+        assertThatThrownBy(() -> service.updateCase(
+                42L,
+                updateRequest("CASE-DUPLICATE", 0L)
+        )).isInstanceOf(DuplicateCaseNumberException.class);
+        verify(caseRepository, never()).saveAndFlush(org.mockito.ArgumentMatchers.any());
+    }
+
     private CaseCreateRequest requiredRequest(String caseNumber) {
         return new CaseCreateRequest(
                 caseNumber,
@@ -115,6 +176,24 @@ class CaseCommandServiceTest {
                 null,
                 null,
                 "\t"
+        );
+    }
+
+    private CaseUpdateRequest updateRequest(String caseNumber, Long version) {
+        return new CaseUpdateRequest(
+                caseNumber,
+                "  Updated case  ",
+                CaseStatus.IN_TRIAL,
+                " ",
+                null,
+                "  Updated plaintiff  ",
+                "Updated defendant",
+                "Updated lawyer",
+                null,
+                null,
+                null,
+                "  Updated description  ",
+                version
         );
     }
 }
