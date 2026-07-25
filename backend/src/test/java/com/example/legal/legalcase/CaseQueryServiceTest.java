@@ -43,7 +43,7 @@ class CaseQueryServiceTest {
                 .thenReturn(List.of());
         CaseQueryService service = new CaseQueryService(caseRepository);
 
-        service.getCases("  ", null, null, "\t");
+        service.getCases("  ", null, null, "\t", CaseArchiveState.ACTIVE);
 
         verify(caseRepository).findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc();
     }
@@ -54,7 +54,8 @@ class CaseQueryServiceTest {
                 "(2016)浙\\%01\\_",
                 "张三",
                 "IN_TRIAL",
-                "李律师"
+                "李律师",
+                false
         )).thenReturn(List.of());
         CaseQueryService service = new CaseQueryService(caseRepository);
 
@@ -62,14 +63,16 @@ class CaseQueryServiceTest {
                 "  (2016)浙%01_  ",
                 " 张三 ",
                 CaseStatus.IN_TRIAL,
-                " 李律师 "
+                " 李律师 ",
+                CaseArchiveState.ACTIVE
         );
 
         verify(caseRepository).searchTop10(
                 "(2016)浙\\%01\\_",
                 "张三",
                 "IN_TRIAL",
-                "李律师"
+                "李律师",
+                false
         );
     }
 

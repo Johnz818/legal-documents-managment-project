@@ -586,6 +586,142 @@ class CaseControllerIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void archivesAndRestoresCase() throws Exception {
+        Long caseId = insertCase(
+                "ARCHIVE-" + UUID.randomUUID(),
+                1,
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                false
+        );
+
+        mockMvc.perform(post("/api/cases/{id}/archive", caseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"version\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.archived").value(true))
+                .andExpect(jsonPath("$.version").value(1));
+
+        mockMvc.perform(post("/api/cases/{id}/restore", caseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"version\":1}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.archived").value(false))
+                .andExpect(jsonPath("$.version").value(2));
+    }
+
+    @Test
+    void archiveAndRestoreAreIdempotentForCurrentVersion() throws Exception {
+        Long activeCaseId = insertCase(
+                "RESTORE-IDEMPOTENT-" + UUID.randomUUID(),
+                1,
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                false
+        );
+        Long archivedCaseId = insertCase(
+                "ARCHIVE-IDEMPOTENT-" + UUID.randomUUID(),
+                2,
+                LocalDateTime.of(2026, 1, 2, 10, 0),
+                true
+        );
+
+        mockMvc.perform(post("/api/cases/{id}/restore", activeCaseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"version\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.archived").value(false))
+                .andExpect(jsonPath("$.version").value(0));
+
+        mockMvc.perform(post("/api/cases/{id}/archive", archivedCaseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"version\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.archived").value(true))
+                .andExpect(jsonPath("$.version").value(0));
+    }
+
+    @Test
+    void returnsArchivedCasesOnlyWhenRequested() throws Exception {
+        insertCase(
+                "ACTIVE-LIST-" + UUID.randomUUID(),
+                1,
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                false
+        );
+        String archivedCaseNumber = "ARCHIVED-LIST-" + UUID.randomUUID();
+        insertCase(
+                archivedCaseNumber,
+                2,
+                LocalDateTime.of(2026, 1, 2, 10, 0),
+                true
+        );
+
+        mockMvc.perform(get("/api/cases").param("archiveState", "ARCHIVED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].caseNumber").value(archivedCaseNumber))
+                .andExpect(jsonPath("$.data[0].archived").value(true));
+    }
+
+    @Test
+    void appliesSearchCriteriaToArchivedCases() throws Exception {
+        String prefix = "ARCHIVED-SEARCH-" + UUID.randomUUID();
+        insertCase(
+                prefix + "-MATCH",
+                1,
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                true
+        );
+        insertCase(
+                "OTHER-" + UUID.randomUUID(),
+                2,
+                LocalDateTime.of(2026, 1, 2, 10, 0),
+                true
+        );
+
+        mockMvc.perform(get("/api/cases")
+                        .param("archiveState", "ARCHIVED")
+                        .param("caseNumberPrefix", prefix))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].caseNumber").value(prefix + "-MATCH"));
+    }
+
+    @Test
+    void returnsConflictForStaleArchiveVersion() throws Exception {
+        Long caseId = insertCase(
+                "ARCHIVE-STALE-" + UUID.randomUUID(),
+                1,
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                false
+        );
+        jdbcTemplate.update("UPDATE cases SET version = 2 WHERE id = ?", caseId);
+
+        mockMvc.perform(post("/api/cases/{id}/archive", caseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"version\":1}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void returnsNotFoundAndBadRequestForInvalidArchiveRequests() throws Exception {
+        mockMvc.perform(post("/api/cases/{id}/archive", Long.MAX_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"version\":0}"))
+                .andExpect(status().isNotFound());
+
+        Long caseId = insertCase(
+                "ARCHIVE-INVALID-" + UUID.randomUUID(),
+                1,
+                LocalDateTime.of(2026, 1, 1, 10, 0),
+                false
+        );
+        mockMvc.perform(post("/api/cases/{id}/archive", caseId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
     private ObjectNode validCreateRequest(String caseNumber) {
         ObjectNode request = objectMapper.createObjectNode();
         request.put("caseNumber", caseNumber);

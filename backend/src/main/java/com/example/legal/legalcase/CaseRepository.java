@@ -14,10 +14,12 @@ public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
 
     List<CaseEntity> findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc();
 
+    List<CaseEntity> findTop10ByArchivedTrueOrderByCreatedAtDescIdDesc();
+
     @Query(value = """
             SELECT *
             FROM cases c
-            WHERE c.archived = FALSE
+            WHERE c.archived = :archived
               AND (:caseNumberPrefix IS NULL
                    OR c.case_number LIKE CONCAT(:caseNumberPrefix, '%') ESCAPE '\\\\')
               AND (:caseNamePrefix IS NULL
@@ -31,6 +33,7 @@ public interface CaseRepository extends JpaRepository<CaseEntity, Long> {
             @Param("caseNumberPrefix") String caseNumberPrefix,
             @Param("caseNamePrefix") String caseNamePrefix,
             @Param("status") String status,
-            @Param("leadLawyerName") String leadLawyerName
+            @Param("leadLawyerName") String leadLawyerName,
+            @Param("archived") boolean archived
     );
 }

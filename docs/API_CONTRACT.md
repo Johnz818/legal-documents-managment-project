@@ -18,6 +18,7 @@ Optional query parameters:
 | `caseNamePrefix` | Case name starts with the supplied value. |
 | `status` | Exact backend status enum value. |
 | `leadLawyerName` | Exact lead-lawyer snapshot name. |
+| `archiveState` | `ACTIVE` or `ARCHIVED`; defaults to `ACTIVE`. |
 
 Supported status values:
 
@@ -99,6 +100,7 @@ When no cases exist, the endpoint returns:
 ### Current query behavior
 
 - Only non-archived cases are returned.
+- Supplying `archiveState=ARCHIVED` returns archived cases instead.
 - Results are sorted by creation time descending.
 - At most 10 cases are returned.
 - Case number and case name use prefix matching rather than arbitrary contains matching.
@@ -327,3 +329,30 @@ The response uses the complete Case Detail contract and contains the incremented
 | `409 Conflict` | The case number belongs to another case, or the submitted version is stale. |
 
 Archive/restore, file upload, and authorization are separate capabilities and are not part of this endpoint.
+
+## Archive and restore case
+
+### Endpoints
+
+```text
+POST /api/cases/{id}/archive
+POST /api/cases/{id}/restore
+```
+
+Both operations accept the current optimistic-locking version:
+
+```json
+{
+  "version": 1
+}
+```
+
+On success, the endpoint returns `200 OK` with the complete Case Detail response. A state change increments `version`. Repeating the operation when the case is already in the requested state is idempotent and does not increment the version.
+
+| Status | Meaning |
+| --- | --- |
+| `400 Bad Request` | Version is missing or invalid. |
+| `404 Not Found` | No case exists for the supplied ID. |
+| `409 Conflict` | The submitted version is stale. |
+
+Archiving is reversible and is not physical deletion. The default Case List returns active cases; archived cases are discoverable with `archiveState=ARCHIVED`.

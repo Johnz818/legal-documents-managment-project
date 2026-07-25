@@ -79,6 +79,36 @@ public class CaseCommandService {
         }
     }
 
+    @Transactional
+    public CaseDetailResponse archiveCase(Long id, CaseArchiveRequest request) {
+        return changeArchiveState(id, request.version(), true);
+    }
+
+    @Transactional
+    public CaseDetailResponse restoreCase(Long id, CaseArchiveRequest request) {
+        return changeArchiveState(id, request.version(), false);
+    }
+
+    private CaseDetailResponse changeArchiveState(Long id, Long version, boolean archived) {
+        CaseEntity caseEntity = caseRepository.findById(id)
+                .orElseThrow(() -> new CaseNotFoundException(id));
+
+        if (!version.equals(caseEntity.getVersion())) {
+            throw new StaleCaseVersionException(id);
+        }
+
+        if (caseEntity.isArchived() == archived) {
+            return toResponse(caseEntity);
+        }
+
+        caseEntity.setArchived(archived);
+        try {
+            return toResponse(caseRepository.saveAndFlush(caseEntity));
+        } catch (ObjectOptimisticLockingFailureException exception) {
+            throw new StaleCaseVersionException(id);
+        }
+    }
+
     private String normalizeOptional(String value) {
         if (value == null || value.isBlank()) {
             return null;

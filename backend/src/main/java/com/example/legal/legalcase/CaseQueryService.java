@@ -19,7 +19,8 @@ public class CaseQueryService {
             String caseNumberPrefix,
             String caseNamePrefix,
             CaseStatus status,
-            String leadLawyerName
+            String leadLawyerName,
+            CaseArchiveState archiveState
     ) {
         String normalizedCaseNumberPrefix = normalizePrefix(caseNumberPrefix);
         String normalizedCaseNamePrefix = normalizePrefix(caseNamePrefix);
@@ -29,7 +30,7 @@ public class CaseQueryService {
                 && normalizedCaseNamePrefix == null
                 && status == null
                 && normalizedLeadLawyerName == null) {
-            return getLatestCases();
+            return getLatestCases(archiveState);
         }
 
         return new CaseListResponse(
@@ -37,7 +38,8 @@ public class CaseQueryService {
                                 normalizedCaseNumberPrefix,
                                 normalizedCaseNamePrefix,
                                 status == null ? null : status.name(),
-                                normalizedLeadLawyerName
+                                normalizedLeadLawyerName,
+                                archiveState.isArchived()
                         )
                         .stream()
                         .map(this::toResponse)
@@ -47,9 +49,17 @@ public class CaseQueryService {
 
     @Transactional(readOnly = true)
     public CaseListResponse getLatestCases() {
+        return getLatestCases(CaseArchiveState.ACTIVE);
+    }
+
+    @Transactional(readOnly = true)
+    public CaseListResponse getLatestCases(CaseArchiveState archiveState) {
+        var cases = archiveState == CaseArchiveState.ARCHIVED
+                ? caseRepository.findTop10ByArchivedTrueOrderByCreatedAtDescIdDesc()
+                : caseRepository.findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc();
+
         return new CaseListResponse(
-                caseRepository.findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc()
-                        .stream()
+                cases.stream()
                         .map(this::toResponse)
                         .toList()
         );

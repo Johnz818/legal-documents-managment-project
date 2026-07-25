@@ -36,13 +36,15 @@ public class CaseController {
             @RequestParam(required = false) String caseNumberPrefix,
             @RequestParam(required = false) String caseNamePrefix,
             @RequestParam(required = false) CaseStatus status,
-            @RequestParam(required = false) String leadLawyerName
+            @RequestParam(required = false) String leadLawyerName,
+            @RequestParam(defaultValue = "ACTIVE") CaseArchiveState archiveState
     ) {
         return caseQueryService.getCases(
                 caseNumberPrefix,
                 caseNamePrefix,
                 status,
-                leadLawyerName
+                leadLawyerName,
+                archiveState
         );
     }
 
@@ -72,6 +74,22 @@ public class CaseController {
             @Valid @RequestBody CaseUpdateRequest request
     ) {
         return caseCommandService.updateCase(id, request);
+    }
+
+    @PostMapping("/{id}/archive")
+    public CaseDetailResponse archiveCase(
+            @PathVariable Long id,
+            @Valid @RequestBody CaseArchiveRequest request
+    ) {
+        return caseCommandService.archiveCase(id, request);
+    }
+
+    @PostMapping("/{id}/restore")
+    public CaseDetailResponse restoreCase(
+            @PathVariable Long id,
+            @Valid @RequestBody CaseArchiveRequest request
+    ) {
+        return caseCommandService.restoreCase(id, request);
     }
 
     @ExceptionHandler(DuplicateCaseNumberException.class)
