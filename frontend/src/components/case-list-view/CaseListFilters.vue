@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select'
 import SafeIcon from '@/components/common/SafeIcon.vue'
 import { CASE_STATUS_OPTIONS } from '@/constants/caseStatus'
-import type { CaseSearchCriteria, CaseStatusCode } from '@/types/case'
+import type { CaseArchiveState, CaseSearchCriteria, CaseStatusCode } from '@/types/case'
 
 interface Props {
   isLoading: boolean
@@ -29,13 +29,15 @@ const caseNumberPrefix = ref('')
 const caseNamePrefix = ref('')
 const selectedStatus = ref<CaseStatusCode | 'ALL'>('ALL')
 const leadLawyerName = ref('')
+const archiveState = ref<CaseArchiveState>('ACTIVE')
 
 const hasActiveFilters = computed(() => {
   return Boolean(
     caseNumberPrefix.value
       || caseNamePrefix.value
       || selectedStatus.value !== 'ALL'
-      || leadLawyerName.value,
+      || leadLawyerName.value
+      || archiveState.value === 'ARCHIVED',
   )
 })
 
@@ -57,6 +59,9 @@ const buildCriteria = (): CaseSearchCriteria => {
   if (normalizedLeadLawyerName) {
     criteria.leadLawyerName = normalizedLeadLawyerName
   }
+  if (archiveState.value === 'ARCHIVED') {
+    criteria.archiveState = 'ARCHIVED'
+  }
 
   return criteria
 }
@@ -70,6 +75,7 @@ const resetFilters = () => {
   caseNamePrefix.value = ''
   selectedStatus.value = 'ALL'
   leadLawyerName.value = ''
+  archiveState.value = 'ACTIVE'
   emit('reset')
 }
 </script>
@@ -79,7 +85,7 @@ const resetFilters = () => {
     class="flex flex-col gap-3 rounded-lg border bg-card p-4"
     @submit.prevent="submitSearch"
   >
-    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
       <div>
         <label class="mb-1 block text-sm font-medium">案号前缀</label>
         <Input
@@ -124,6 +130,19 @@ const resetFilters = () => {
           placeholder="输入完整姓名"
           class="h-9"
         />
+      </div>
+
+      <div>
+        <label class="mb-1 block text-sm font-medium">归档状态</label>
+        <Select v-model="archiveState">
+          <SelectTrigger class="h-9">
+            <SelectValue placeholder="选择归档状态" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ACTIVE">在办案件</SelectItem>
+            <SelectItem value="ARCHIVED">已归档案件</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
 

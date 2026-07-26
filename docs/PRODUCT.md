@@ -345,7 +345,7 @@ CaseDetailContent.vue
 
 Case List displays live scalar case information and supports API-backed filtering by case-number prefix, case-name prefix, status, and exact lead-lawyer snapshot name. Its bulk-action controls remain frontend discovery data and do not change backend state.
 
-Case Detail displays and updates live scalar case information. Updates use optimistic locking so an older edit cannot silently overwrite a newer change. Its documents and reminders remain mock-backed, and supporting members are shown as not yet available. Tags and supporting members are not synthesized from legacy case mocks.
+Case Detail displays and updates live scalar case information. Updates use optimistic locking so an older edit cannot silently overwrite a newer change. Users can archive and restore cases, and archived cases are discoverable through the Case List archive-state selector. Its documents and reminders remain mock-backed, and supporting members are shown as not yet available. Tags and supporting members are not synthesized from legacy case mocks.
 
 The manual Case creation page submits the approved scalar model to the backend Case creation API. Lead lawyers still come from the temporary frontend user dataset and are persisted as name snapshots until the User domain is implemented.
 
@@ -361,6 +361,7 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 - Find cases using approved lookup criteria and list filters.
 - Create and persist a new case through the manual creation workflow.
 - Edit and persist scalar case details.
+- Archive, discover, and restore cases.
 
 ### Planned user journeys
 

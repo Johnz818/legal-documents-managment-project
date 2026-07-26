@@ -8,11 +8,14 @@ export type CaseStatusCode =
   | 'IN_ENFORCEMENT'
   | 'CLOSED'
 
+export type CaseArchiveState = 'ACTIVE' | 'ARCHIVED'
+
 export interface CaseSearchCriteria {
   caseNumberPrefix?: string
   caseNamePrefix?: string
   status?: CaseStatusCode
   leadLawyerName?: string
+  archiveState?: CaseArchiveState
 }
 
 export interface CaseCreateRequest {
@@ -31,6 +34,10 @@ export interface CaseCreateRequest {
 }
 
 export interface CaseUpdateRequest extends CaseCreateRequest {
+  version: number
+}
+
+export interface CaseArchiveRequest {
   version: number
 }
 

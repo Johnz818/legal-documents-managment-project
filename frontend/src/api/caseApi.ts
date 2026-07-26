@@ -1,5 +1,6 @@
 import type {
   CaseDetailResponse,
+  CaseArchiveRequest,
   CaseCreateRequest,
   CaseListResponse,
   CaseSearchCriteria,
@@ -103,6 +104,34 @@ export async function putCase(
 
   if (!response.ok) {
     throw new Error(`Failed to update case ${caseId}: HTTP ${response.status}`)
+  }
+
+  return response.json() as Promise<CaseDetailResponse>
+}
+
+export async function postCaseArchiveState(
+  caseId: number,
+  action: 'archive' | 'restore',
+  request: CaseArchiveRequest,
+): Promise<CaseDetailResponse> {
+  const response = await fetch(`${CASES_ENDPOINT}/${caseId}/${action}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+
+  if (response.status === 404) {
+    throw new CaseNotFoundError(caseId)
+  }
+
+  if (response.status === 409) {
+    throw new CaseConflictError()
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to ${action} case ${caseId}: HTTP ${response.status}`)
   }
 
   return response.json() as Promise<CaseDetailResponse>

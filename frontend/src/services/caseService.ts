@@ -4,6 +4,7 @@ import {
   fetchCaseById,
   fetchCases,
   postCase,
+  postCaseArchiveState,
   putCase,
 } from '@/api/caseApi'
 import type {
@@ -86,6 +87,30 @@ export async function updateCase(
       }
 
       throw new DuplicateCaseNumberError()
+    }
+
+    throw error
+  }
+}
+
+export async function changeCaseArchiveState(
+  caseId: number,
+  version: number,
+  archived: boolean,
+): Promise<CaseDetailResponse> {
+  try {
+    return await postCaseArchiveState(
+      caseId,
+      archived ? 'archive' : 'restore',
+      { version },
+    )
+  } catch (error) {
+    if (error instanceof CaseNotFoundError) {
+      throw new CaseUpdateNotFoundError()
+    }
+
+    if (error instanceof CaseConflictError) {
+      throw new StaleCaseVersionError()
     }
 
     throw error

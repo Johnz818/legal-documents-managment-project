@@ -7,6 +7,15 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import PageHeader from '@/components/common/PageHeader.vue'
 import SafeIcon from '@/components/common/SafeIcon.vue'
 import CaseDetailHeader from '@/components/case-detail-view/CaseDetailHeader.vue'
@@ -18,6 +27,7 @@ import CaseDetailReminders from '@/components/case-detail-view/CaseDetailReminde
 import CaseDetailTeam from '@/components/case-detail-view/CaseDetailTeam.vue'
 import {
   CaseUpdateNotFoundError,
+  changeCaseArchiveState,
   DuplicateCaseNumberError,
   getCaseById,
   StaleCaseVersionError,
@@ -39,6 +49,8 @@ const isNotFound = ref(false)
 const errorMessage = ref('')
 const updateErrorMessage = ref('')
 const isEditing = ref(false)
+const archiveDialogOpen = ref(false)
+const isChangingArchiveState = ref(false)
 const activeTab = ref('basic')
 
 const validationSchema = z.object({
@@ -221,6 +233,36 @@ const handleCancel = () => {
   isEditing.value = false
 }
 
+const handleArchiveStateChange = async () => {
+  if (currentCaseId.value === null || caseData.value === null) {
+    return
+  }
+
+  isChangingArchiveState.value = true
+  updateErrorMessage.value = ''
+  try {
+    const updatedCase = await changeCaseArchiveState(
+      currentCaseId.value,
+      caseData.value.version,
+      !caseData.value.archived,
+    )
+    caseData.value = updatedCase
+    resetCaseForm(updatedCase)
+    archiveDialogOpen.value = false
+  } catch (error) {
+    archiveDialogOpen.value = false
+    if (error instanceof StaleCaseVersionError) {
+      updateErrorMessage.value = '案件已被其他用户修改，请重新加载后再归档或恢复。'
+    } else if (error instanceof CaseUpdateNotFoundError) {
+      updateErrorMessage.value = '案件已不存在，无法更改归档状态。'
+    } else {
+      updateErrorMessage.value = '归档状态更新失败，请确认后端服务可用后重试。'
+    }
+  } finally {
+    isChangingArchiveState.value = false
+  }
+}
+
 const handleGenerateDocument = () => {
   // Navigate to document generation with case pre-selected
   if (typeof window !== 'undefined' && currentCaseId.value !== null) {
@@ -259,6 +301,54 @@ const handleViewAllReminders = () => {
           <SafeIcon name="Edit" :size="16" class="mr-2" />
           编辑
         </Button>
+        <Dialog
+          v-if="caseData && !isEditing"
+          v-model:open="archiveDialogOpen"
+        >
+          <DialogTrigger as-child>
+            <Button
+              :variant="caseData.archived ? 'outline' : 'destructive'"
+              size="sm"
+            >
+              <SafeIcon
+                :name="caseData.archived ? 'ArchiveRestore' : 'Archive'"
+                :size="16"
+                class="mr-2"
+              />
+              {{ caseData.archived ? '恢复案件' : '归档案件' }}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {{ caseData.archived ? '确认恢复案件' : '确认归档案件' }}
+              </DialogTitle>
+              <DialogDescription>
+                {{
+                  caseData.archived
+                    ? '恢复后，案件将重新出现在默认的在办案件列表中。'
+                    : '归档后，案件将从默认列表中隐藏，但可以在已归档案件中恢复。'
+                }}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                :disabled="isChangingArchiveState"
+                @click="archiveDialogOpen = false"
+              >
+                取消
+              </Button>
+              <Button
+                :variant="caseData.archived ? 'default' : 'destructive'"
+                :disabled="isChangingArchiveState"
+                @click="handleArchiveStateChange"
+              >
+                {{ isChangingArchiveState ? '处理中...' : (caseData.archived ? '恢复' : '归档') }}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <template v-else-if="caseData && isEditing">
           <Button
             variant="default"

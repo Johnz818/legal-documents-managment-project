@@ -42,9 +42,9 @@ const handleBatchTagUpdate = () => {
   batchTagAction.value = ''
 }
 
-// Handle batch delete
-const handleBatchDelete = () => {
-  console.log(`Deleting ${selectedCount.value} cases`)
+// Batch archive remains discovery-only until real row selection is connected.
+const handleBatchArchive = () => {
+  console.log(`Archiving ${selectedCount.value} cases`)
 }
 
 // Handle export
@@ -119,7 +119,7 @@ const showBatchActions = computed(() => selectedCount.value > 0)
         导出
       </Button>
 
-<!-- Delete button -->
+      <!-- Archive button -->
       <Dialog>
         <DialogTrigger as-child>
           <Button
@@ -127,23 +127,23 @@ const showBatchActions = computed(() => selectedCount.value > 0)
             variant="destructive"
             class="h-8"
           >
-            <SafeIcon name="Trash2" :size="16" class="mr-1" />
-            删除
+            <SafeIcon name="Archive" :size="16" class="mr-1" />
+            归档
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
+            <DialogTitle>确认归档</DialogTitle>
             <DialogDescription>
-              您确定要删除选中的 {{ selectedCount }} 个案件吗？此操作无法撤销。
+              您确定要归档选中的 {{ selectedCount }} 个案件吗？归档后可以恢复。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose as-child>
               <Button variant="outline">取消</Button>
             </DialogClose>
-            <Button @click="handleBatchDelete" variant="destructive">
-              删除
+            <Button @click="handleBatchArchive" variant="destructive">
+              归档
             </Button>
           </DialogFooter>
         </DialogContent>
