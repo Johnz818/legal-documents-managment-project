@@ -313,3 +313,8 @@ Archive behavior must not silently delete associated document binaries.
 - Define a legally appropriate retention and restricted permanent-purge policy, including related-document cleanup.
 - Select a malware-scanning approach and failure/quarantine policy before accepting untrusted production uploads.
 - Define document-object reconciliation and orphan cleanup if operational evidence requires it.
+- During the runtime-configuration/deployment phase, replace the frontend's
+  hardcoded local backend URL with environment-based API configuration and
+  evaluate same-origin `/api` proxying. Until then, the localhost URL remains an
+  intentional local-development constraint; public frontend environment values
+  must never contain secrets.
