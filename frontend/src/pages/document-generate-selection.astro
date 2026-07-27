@@ -4,7 +4,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro'
 import CommonHeader from '@/components/common/CommonHeader.vue'
 import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
-import DocumentGenerateSelection from '@/components/document-generate-selection/DocumentGenerateSelection.vue'
+import DocumentGenerateSelectionView from '@/components/document-generate-selection/DocumentGenerateSelection.vue'
 ---
 
 <BaseLayout title="选择文书生成 - 诉讼案件管理系统">
@@ -19,7 +19,7 @@ import DocumentGenerateSelection from '@/components/document-generate-selection/
           { label: '选择文书生成' }
         ]}
       />
-      <DocumentGenerateSelection client:load />
+      <DocumentGenerateSelectionView client:load />
     </main>
   </AppSidebarLayout>
 </BaseLayout>

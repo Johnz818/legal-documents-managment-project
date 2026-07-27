@@ -120,7 +120,6 @@ export default defineConfig({
     concurrency: 4,
     format: 'file',
     assets: '',
-    assetsPrefix: '.',
     rollupOptions: {
       maxParallelFileOps: 24,
       output: {
@@ -136,7 +135,6 @@ export default defineConfig({
   },
   compressHTML: false,
   vite: {
-    base: './',
     resolve: {
       alias: {
         '@': '/src'

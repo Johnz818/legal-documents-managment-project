@@ -1,6 +1,6 @@
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,8 @@ import type { TemplateVariableModel } from '@/data/document'
 interface Props {
   variables: TemplateVariableModel[]
 }
+
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   insert: [variableName: string]
@@ -29,8 +31,6 @@ const filteredVariables = computed(() => {
     v.description.toLowerCase().includes(query)
   )
 })
-
-import { computed } from 'vue'
 </script>
 
 <template>

@@ -8,7 +8,9 @@ function getRelativePath(filePath: string): string {
 
 export function vueNodeTransform() {
   return (node: any, ctx: any) => {
-    if (node && node.type === 1 && node.tag) {
+    // Vue component nodes may render fragments or teleports and cannot always
+    // inherit arbitrary attributes. Keep source metadata on native DOM nodes.
+    if (node && node.type === 1 && node.tagType === 0 && node.tag) {
       const filePath = ctx?.filename || '';
       const relativeFile = getRelativePath(filePath);
 

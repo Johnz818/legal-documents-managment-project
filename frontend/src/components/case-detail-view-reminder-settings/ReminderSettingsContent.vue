@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import SafeIcon from '@/components/common/SafeIcon.vue'
-import { MOCK_REMINDERS, MOCK_CASES, ReminderType, ReminderMethod } from '@/data/reminder'
+import { MOCK_REMINDERS, ReminderType } from '@/data/reminder'
 import { getCaseById } from '@/data/case'
 import ReminderList from './ReminderList.vue'
 import ReminderForm from './ReminderForm.vue'

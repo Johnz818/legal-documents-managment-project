@@ -4,7 +4,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro'
 import CommonHeader from '@/components/common/CommonHeader.vue'
 import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
-import CaseTagManagement from '@/components/case-tag-management/CaseTagManagement.vue'
+import CaseTagManagementView from '@/components/case-tag-management/CaseTagManagement.vue'
 ---
 
 <BaseLayout title="案件标签管理 - 诉讼案件管理系统">
@@ -20,7 +20,7 @@ import CaseTagManagement from '@/components/case-tag-management/CaseTagManagemen
         ]}
       />
       <div class="flex-1 overflow-auto">
-        <CaseTagManagement client:idle />
+        <CaseTagManagementView client:idle />
       </div>
     </main>
   </AppSidebarLayout>

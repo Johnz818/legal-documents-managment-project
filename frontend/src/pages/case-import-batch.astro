@@ -3,7 +3,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import CommonHeader from '@/components/common/CommonHeader.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
-import CaseImportBatch from '@/components/case-import-batch/CaseImportBatch.vue'
+import CaseImportBatchView from '@/components/case-import-batch/CaseImportBatch.vue'
 ---
 
 <BaseLayout title="案件批量导入 - 诉讼案件管理系统">
@@ -18,7 +18,7 @@ import CaseImportBatch from '@/components/case-import-batch/CaseImportBatch.vue'
       ]}
     />
     <div class="flex-1 p-6">
-      <CaseImportBatch client:load />
+      <CaseImportBatchView client:load />
     </div>
   </main>
 </BaseLayout>

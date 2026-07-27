@@ -3,14 +3,14 @@
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import CommonHeader from '@/components/common/CommonHeader.vue'
 import AppSidebarLayout from '@/components/common/AppSidebarLayout.vue'
-import CaseBulkManagementEntry from '@/components/case-bulk-management-entry/CaseBulkManagementEntry.vue'
+import CaseBulkManagementEntryView from '@/components/case-bulk-management-entry/CaseBulkManagementEntry.vue'
 ---
 
 <BaseLayout title="案件批量管理 - 诉讼案件管理系统">
   <CommonHeader client:load />
   <AppSidebarLayout client:load headerHeight="64px">
     <main class="flex-1 flex flex-col">
-      <CaseBulkManagementEntry client:idle />
+      <CaseBulkManagementEntryView client:idle />
     </main>
   </AppSidebarLayout>
 </BaseLayout>
