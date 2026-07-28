@@ -304,6 +304,70 @@ Archive behavior must not silently delete associated document binaries.
 
 ---
 
+## 2026-07-28
+
+### D-018
+
+Status: Accepted
+
+The Document domain owns Case-related file metadata and binary-storage
+coordination. The Case domain owns Case identity and lifecycle but does not own
+document binaries, storage keys, templates, or generation workflow state.
+
+For the current model:
+
+- one Case may own many Case documents;
+- every Case document belongs to exactly one Case;
+- sharing one document across multiple Cases is not supported;
+- the relationship is represented by a required `case_id`, not a many-to-many
+  join table or a bidirectional Case entity collection;
+- document templates are independent reusable definitions and are not Case
+  documents.
+
+The initial Case file-management capability supports uploading PDF, DOC, and
+DOCX. Image uploads are deferred until their exact formats, validation, preview,
+and security requirements justify the additional scope.
+
+Case file management includes upload, metadata persistence, listing, download,
+and Case Detail integration. It does not include template-based generation,
+browser editing, PDF conversion, OCR, or AI processing.
+
+---
+
+### D-019
+
+Status: Accepted
+
+The initial template-generation model uses one DOCX source file per immutable
+template version. A template has one intended generated format in this phase:
+DOCX. Versioning preserves the exact template used by existing generation
+records; it does not represent multiple output formats.
+
+`DocumentGenerationService` owns the application workflow:
+
+1. Load the Case and selected template version.
+2. Resolve approved Case values and explicit user input.
+3. Validate required structured fields.
+4. Invoke `DocumentTemplateRenderer`.
+5. Store the generated binary through `DocumentStorage`.
+6. Persist the Case document metadata and generation record.
+7. Perform best-effort binary cleanup if later persistence fails.
+
+`DocumentTemplateRenderer` performs rendering only. It must not load Cases,
+authorize users, persist metadata, or access local-filesystem or S3-specific
+APIs.
+
+The first generation capability supports structured scalar placeholders, DOCX
+draft output, and explicit human finalization. It does not support arbitrary
+expressions, conditions, repeating collections, browser-based Word editing, or
+automatic finalization.
+
+DOCX-to-PDF conversion, reviewed-document replacement, image support, OCR, and
+AI-assisted extraction are deferred. Future AI output is advisory and must
+remain subject to explicit human review before document finalization.
+
+---
+
 ## Future considerations (TODO)
 
 - Evaluate Flyway compatibility with MySQL 9.7.
