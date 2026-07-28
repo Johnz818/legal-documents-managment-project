@@ -29,7 +29,7 @@ Current engineering gaps:
 | Phase | Status | Repository evidence | Next action |
 | --- | --- | --- | --- |
 | Phase 1 — Engineering Baseline | Complete for the approved local-development scope | E1–E4 are committed; frontend checks/tests/build pass and the backend enforces its 90% line-coverage gate. E5 was deliberately reassigned to deployment configuration. | Begin Case document management. |
-| Phase 2 — Case Document Management | In progress | D1 architecture decisions D-014, D-015, D-017, D-018, and D-019 are accepted. | Implement D2, the storage contract. |
+| Phase 2 — Case Document Management | In progress | D1 architecture decisions are accepted and D2 defines the provider-neutral storage contract. | Implement D3, document metadata persistence. |
 | Phase 3 — Containerization | Not started | No Dockerfiles or Compose environment exist. | Start after the local upload/download journey works. |
 | Phase 4 — Continuous Integration | Not started | No repository CI workflow exists. | Start after reproducible local containers exist. |
 | Phase 5 — Minimal Document Generation | Planned | D-019 defines the deliberately limited generation boundary. | Start after containerization and CI. |
@@ -143,7 +143,7 @@ but combining ticket boundaries requires a separate scope review.
 | Ticket | Outcome | Verification | Suggested commit summary |
 | --- | --- | --- | --- |
 | D1 — Document architecture (complete) | Record Case ownership, format support, storage, lifecycle, template, generation, and deferred AI boundaries. | Documentation diff and decision review. | `docs: define document workflow architecture` |
-| D2 — Document storage contract | Define minimal store, open, and compensating-remove operations without framework or provider coupling. | Contract-focused unit tests and backend coverage check. | `feat: define document storage contract` |
+| D2 — Document storage contract (complete) | Define minimal store, open, and compensating-remove operations without framework or provider coupling. | Contract-focused unit tests and backend coverage check. | `feat: define document storage contract` |
 | D3 — Document metadata persistence | Add the Flyway schema, JPA mapping, repository, and required Case relationship. | Flyway and repository integration tests against MySQL. | `feat: persist case document metadata` |
 | D4 — Local storage adapter | Store development files outside public directories using generated safe keys. | Temporary-directory integration tests including path-safety cases. | `feat: add local document storage` |
 | D5 — Document upload API | Upload validated PDF, DOC, and DOCX files against an existing Case with compensating cleanup. | API tests for success, missing Case, invalid type, oversize file, and cleanup failure paths. | `feat: add case document upload API` |
