@@ -1,4 +1,4 @@
-package com.example.legal.document;
+package com.example.legal.document.storage;
 
 /**
  * Normalizes failures from a document storage provider.

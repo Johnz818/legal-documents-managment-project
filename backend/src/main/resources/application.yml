@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: legal-case-management
+  servlet:
+    multipart:
+      max-file-size: ${LEGAL_DOCUMENT_MAX_FILE_SIZE:5MB}
+      max-request-size: ${LEGAL_DOCUMENT_MAX_FILE_SIZE:5MB}
   datasource:
     url: ${LEGAL_DB_URL}
     username: ${LEGAL_DB_USERNAME}
@@ -15,3 +19,11 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+legal:
+  document:
+    storage:
+      local:
+        root: ${LEGAL_DOCUMENT_STORAGE_ROOT:./.local-data/documents}
+    upload:
+      max-file-size: ${LEGAL_DOCUMENT_MAX_FILE_SIZE:5MB}

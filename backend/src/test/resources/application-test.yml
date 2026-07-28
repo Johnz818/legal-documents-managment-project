@@ -9,3 +9,9 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+legal:
+  document:
+    storage:
+      local:
+        root: target/test-document-storage

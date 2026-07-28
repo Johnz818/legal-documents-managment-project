@@ -356,3 +356,65 @@ On success, the endpoint returns `200 OK` with the complete Case Detail response
 | `409 Conflict` | The submitted version is stale. |
 
 Archiving is reversible and is not physical deletion. The default Case List returns active cases; archived cases are discoverable with `archiveState=ARCHIVED`.
+
+## Upload case document
+
+### `POST /api/cases/{caseId}/documents`
+
+Uploads one document against an existing case. The binary content is stored
+outside MySQL; the API response exposes document metadata but never exposes the
+storage key.
+
+### Request
+
+Content type:
+
+```text
+multipart/form-data
+```
+
+The multipart request must contain one part named `file`.
+
+Supported formats and media types:
+
+| Format | File extension | Media type |
+| --- | --- | --- |
+| PDF | `.pdf` | `application/pdf` |
+| Word 97–2003 | `.doc` | `application/msword` |
+| Word Open XML | `.docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
+
+The maximum file size is 5 MB by default. The backend validates the file name,
+declared media type, extension, and content signature. Macro-enabled DOCX
+content is not accepted.
+
+### Successful response
+
+Status: `201 Created`
+
+```json
+{
+  "id": 1,
+  "caseId": 10,
+  "originalFileName": "证据材料.pdf",
+  "documentSource": "UPLOADED",
+  "fileFormat": "PDF",
+  "contentType": "application/pdf",
+  "fileSize": 1024,
+  "createdAt": "2026-07-28T10:00:00",
+  "updatedAt": "2026-07-28T10:00:00"
+}
+```
+
+### Error responses
+
+| Status | Meaning |
+| --- | --- |
+| `400 Bad Request` | The file is absent, empty, or has an unsafe file name. |
+| `404 Not Found` | No case exists for the supplied Case ID. |
+| `413 Payload Too Large` | The file exceeds the configured 5 MB default limit. |
+| `415 Unsupported Media Type` | The extension, media type, or content does not represent a supported PDF, DOC, or safe DOCX file. |
+| `500 Internal Server Error` | Storage, content reading, or metadata persistence fails. |
+
+Authentication and authorization are deferred to the security phase. Image
+upload, document list/download, and template-generated documents are separate
+capabilities.
