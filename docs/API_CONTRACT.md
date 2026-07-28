@@ -418,3 +418,65 @@ Status: `201 Created`
 Authentication and authorization are deferred to the security phase. Image
 upload, document list/download, and template-generated documents are separate
 capabilities.
+
+## List case documents
+
+### `GET /api/cases/{caseId}/documents`
+
+Returns metadata for documents belonging to one case, ordered by creation time
+descending and then document ID descending. Storage keys are never exposed.
+
+### Successful response
+
+Status: `200 OK`
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "caseId": 10,
+      "originalFileName": "证据材料.pdf",
+      "documentSource": "UPLOADED",
+      "fileFormat": "PDF",
+      "contentType": "application/pdf",
+      "fileSize": 1024,
+      "createdAt": "2026-07-28T10:00:00",
+      "updatedAt": "2026-07-28T10:00:00"
+    }
+  ]
+}
+```
+
+An existing case without documents returns `200 OK` with an empty `data`
+array. A missing case returns `404 Not Found`.
+
+## Download case document
+
+### `GET /api/cases/{caseId}/documents/{documentId}/content`
+
+Streams the binary content of a document that belongs to the case identified in
+the URL.
+
+### Successful response
+
+Status: `200 OK`
+
+The response includes:
+
+- the stored validated media type in `Content-Type`;
+- the stored byte count in `Content-Length`;
+- a UTF-8-safe attachment filename in `Content-Disposition`.
+
+The response body contains the original stored bytes.
+
+### Error responses
+
+| Status | Meaning |
+| --- | --- |
+| `404 Not Found` | The document does not exist or does not belong to the supplied Case ID. |
+| `500 Internal Server Error` | Metadata exists but the storage provider cannot open the binary content. |
+
+Range requests, inline preview, caching policy, and download authorization are
+deferred. Documents remain readable for archived cases until future
+authorization or retention policies define a different rule.
