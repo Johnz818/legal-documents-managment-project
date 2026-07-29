@@ -488,7 +488,7 @@ const handleViewAllReminders = () => {
           <!-- Documents Tab -->
           <TabsContent value="documents" class="space-y-4">
             <CaseDetailDocuments
-              :case-id="relatedCaseId"
+              :case-id="caseData.id"
             />
           </TabsContent>
 

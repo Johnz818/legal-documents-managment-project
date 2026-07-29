@@ -13,6 +13,7 @@ export default getViteConfig({
         'src/api/**/*.ts',
         'src/services/**/*.ts',
         'src/components/case-list-view/**/*.vue',
+        'src/components/case-detail-view/CaseDetailDocuments.vue',
       ],
     },
   },

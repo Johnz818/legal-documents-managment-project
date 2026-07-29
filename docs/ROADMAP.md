@@ -18,7 +18,7 @@ Completed:
 
 Current engineering gaps:
 
-- Case-related documents remain mock-backed.
+- Document templates, generation, and reminders remain mock-backed.
 - Runtime endpoints and allowed origins are not fully environment-driven.
 - Containers, CI/CD, deployment, authentication, and operational monitoring are
   not implemented.
@@ -29,7 +29,7 @@ Current engineering gaps:
 | Phase | Status | Repository evidence | Next action |
 | --- | --- | --- | --- |
 | Phase 1 — Engineering Baseline | Complete for the approved local-development scope | E1–E4 are committed; frontend checks/tests/build pass and the backend enforces its 90% line-coverage gate. E5 was deliberately reassigned to deployment configuration. | Begin Case document management. |
-| Phase 2 — Case Document Management | In progress | D1–D6 define and persist the document boundary and provide validated upload, metadata listing, and binary download behavior. | Implement D7, the frontend document integration. |
+| Phase 2 — Case Document Management | In progress | D1–D7 provide metadata persistence, local storage, validated upload, list/download APIs, and the live Case Detail file journey. | Implement D8, permanent removal of eligible accidental uploads. |
 | Phase 3 — Containerization | Not started | No Dockerfiles or Compose environment exist. | Start after the local upload/download journey works. |
 | Phase 4 — Continuous Integration | Not started | No repository CI workflow exists. | Start after reproducible local containers exist. |
 | Phase 5 — Minimal Document Generation | Planned | D-019 defines the deliberately limited generation boundary. | Start after containerization and CI. |
@@ -148,7 +148,8 @@ but combining ticket boundaries requires a separate scope review.
 | D4 — Local storage adapter (complete) | Store development files outside public directories using generated safe keys. | Temporary-directory integration tests including path-safety cases. | `feat: add local document storage` |
 | D5 — Document upload API (complete) | Upload validated PDF, DOC, and DOCX files up to 5 MB against an existing Case with compensating cleanup. | API tests for success, missing Case, invalid type, oversize file, and cleanup failure paths. | `feat: add case document upload API` |
 | D6 — Document read APIs (complete) | List Case documents and download content with safe response metadata. | API tests for list, download, empty result, and missing resources. | `feat: add case document read APIs` |
-| D7 — Frontend document integration | Replace only the Case Detail document mock flow with live upload, list, and download behavior. | Frontend tests and manual loading, empty, error, upload, and download checks. | `feat: integrate case documents` |
+| D7 — Frontend document integration (complete) | Replace only the Case Detail document mock flow with live upload, list, and download behavior. | Frontend tests and manual loading, empty, error, upload, and download checks. | `feat: integrate case documents` |
+| D8 — Accidental-upload removal | Permanently remove an eligible mistakenly uploaded Case file from metadata and binary storage with explicit confirmation. Keep archival and retention-controlled purge as separate lifecycle concerns. | Service/API tests for ownership, missing resources, metadata/storage consistency, and failures; frontend confirmation, success refresh, and error-state tests. | `feat: remove accidental case uploads` |
 
 ### Phase 3 — Containerization
 

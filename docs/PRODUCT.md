@@ -341,11 +341,21 @@ CaseDetailContent.vue
   → caseApi.ts
   → GET /api/cases/{id}
   → PUT /api/cases/{id}
+
+CaseDetailDocuments.vue
+  → documentService.ts
+  → documentApi.ts
+  → GET /api/cases/{caseId}/documents
+  → POST /api/cases/{caseId}/documents
+  → GET /api/cases/{caseId}/documents/{documentId}/content
 ```
 
 Case List displays live scalar case information and supports API-backed filtering by case-number prefix, case-name prefix, status, and exact lead-lawyer snapshot name. Its bulk-action controls remain frontend discovery data and do not change backend state.
 
-Case Detail displays and updates live scalar case information. Updates use optimistic locking so an older edit cannot silently overwrite a newer change. Users can archive and restore cases, and archived cases are discoverable through the Case List archive-state selector. Its documents and reminders remain mock-backed, and supporting members are shown as not yet available. Tags and supporting members are not synthesized from legacy case mocks.
+Case Detail displays and updates live scalar case information. Updates use optimistic locking so an older edit cannot silently overwrite a newer change. Users can archive and restore cases, and archived cases are discoverable through the Case List archive-state selector. Its Case file section lists, uploads, and downloads live PDF and Word files. Reminders remain mock-backed, and supporting members are shown as not yet available. Tags and supporting members are not synthesized from legacy case mocks.
+
+Document templates, generation, and preview/editing continue to use the legacy
+mock models. Generated mock documents are not presented as persisted Case files.
 
 The manual Case creation page submits the approved scalar model to the backend Case creation API. Lead lawyers still come from the temporary frontend user dataset and are persisted as name snapshots until the User domain is implemented.
 
@@ -362,13 +372,15 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 - Create and persist a new case through the manual creation workflow.
 - Edit and persist scalar case details.
 - Archive, discover, and restore cases.
+- Upload, list, and download PDF or Word files for an existing case.
 
 ### Planned user journeys
 
-1. Upload PDF or Word documents against an existing case.
+1. Remove an accidentally uploaded, eligible Case file.
 2. Assign user-backed supporting members and organize cases with tags.
-3. Work with case-related documents and reminders using live data.
-4. Access case capabilities through authenticated and authorized user accounts.
+3. Work with case-related reminders using live data.
+4. Generate and review persisted documents from structured templates.
+5. Access case capabilities through authenticated and authorized user accounts.
 
 ## Product Rules
 
@@ -382,6 +394,6 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 
 - Case List bulk actions are not connected to backend capabilities.
 - Case tags and supporting members are not yet represented by backend relationship models or APIs.
-- Case-related documents and reminders remain mock-backed.
+- Case-related reminders and document generation remain mock-backed.
 - Authentication and authorization are not implemented.
 - Audit-log behavior is represented in navigation and permissions but is not implemented.
