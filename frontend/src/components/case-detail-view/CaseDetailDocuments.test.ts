@@ -1,10 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import CaseDetailDocuments from '@/components/case-detail-view/CaseDetailDocuments.vue'
 import {
+  DocumentRemovalError,
   DocumentUploadError,
   downloadCaseDocument,
   getCaseDocuments,
+  removeCaseDocument,
   uploadCaseDocument,
 } from '@/services/documentService'
 import type { CaseDocumentSummaryResponse } from '@/types/document'
@@ -16,6 +18,7 @@ vi.mock('@/services/documentService', async (importOriginal) => {
     getCaseDocuments: vi.fn(),
     uploadCaseDocument: vi.fn(),
     downloadCaseDocument: vi.fn(),
+    removeCaseDocument: vi.fn(),
   }
 })
 
@@ -50,6 +53,7 @@ describe('CaseDetailDocuments', () => {
     vi.mocked(getCaseDocuments).mockReset()
     vi.mocked(uploadCaseDocument).mockReset()
     vi.mocked(downloadCaseDocument).mockReset()
+    vi.mocked(removeCaseDocument).mockReset()
     createObjectUrl.mockClear()
     revokeObjectUrl.mockClear()
     Object.defineProperty(URL, 'createObjectURL', {
@@ -60,6 +64,10 @@ describe('CaseDetailDocuments', () => {
       configurable: true,
       value: revokeObjectUrl,
     })
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
   })
 
   it('loads and displays live document metadata', async () => {
@@ -171,5 +179,69 @@ describe('CaseDetailDocuments', () => {
     expect(click).toHaveBeenCalled()
     expect(revokeObjectUrl).toHaveBeenCalledWith('blob:test-document')
     click.mockRestore()
+  })
+
+  it('cancels removal without calling the backend', async () => {
+    vi.mocked(getCaseDocuments).mockResolvedValue([documentSummary])
+    const wrapper = mountDocuments()
+    await flushPromises()
+
+    const remove = wrapper.findAll('button')
+      .find(button => button.text().includes('移除'))
+    await remove?.trigger('click')
+    await flushPromises()
+
+    const cancel = Array.from(document.body.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('取消'))
+    cancel?.click()
+    await flushPromises()
+
+    expect(removeCaseDocument).not.toHaveBeenCalled()
+  })
+
+  it('confirms removal and refreshes the document list', async () => {
+    vi.mocked(getCaseDocuments)
+      .mockResolvedValueOnce([documentSummary])
+      .mockResolvedValueOnce([])
+    vi.mocked(removeCaseDocument).mockResolvedValue()
+    const wrapper = mountDocuments()
+    await flushPromises()
+
+    const remove = wrapper.findAll('button')
+      .find(button => button.text().includes('移除'))
+    await remove?.trigger('click')
+    await flushPromises()
+    expect(document.body.textContent).toContain('证据材料.pdf')
+
+    const confirm = Array.from(document.body.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('确认移除'))
+    confirm?.click()
+    await flushPromises()
+
+    expect(removeCaseDocument).toHaveBeenCalledWith(7, 4)
+    expect(getCaseDocuments).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).toContain('暂无案件文件')
+  })
+
+  it('keeps the document visible and reports a removal failure', async () => {
+    vi.mocked(getCaseDocuments).mockResolvedValue([documentSummary])
+    vi.mocked(removeCaseDocument).mockRejectedValue(
+      new DocumentRemovalError('not-found'),
+    )
+    const wrapper = mountDocuments()
+    await flushPromises()
+
+    const remove = wrapper.findAll('button')
+      .find(button => button.text().includes('移除'))
+    await remove?.trigger('click')
+    await flushPromises()
+    const confirm = Array.from(document.body.querySelectorAll('button'))
+      .find(button => button.textContent?.includes('确认移除'))
+    confirm?.click()
+    await flushPromises()
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('文件已不存在')
+    expect(wrapper.text()).toContain('证据材料.pdf')
+    expect(getCaseDocuments).toHaveBeenCalledTimes(1)
   })
 })

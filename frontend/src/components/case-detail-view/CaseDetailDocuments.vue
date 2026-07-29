@@ -4,6 +4,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -12,9 +20,11 @@ import {
 } from '@/components/ui/empty'
 import SafeIcon from '@/components/common/SafeIcon.vue'
 import {
+  DocumentRemovalError,
   DocumentUploadError,
   downloadCaseDocument,
   getCaseDocuments,
+  removeCaseDocument,
   uploadCaseDocument,
 } from '@/services/documentService'
 import type { CaseDocumentSummaryResponse } from '@/types/document'
@@ -29,6 +39,9 @@ const documents = ref<CaseDocumentSummaryResponse[]>([])
 const isLoading = ref(true)
 const isUploading = ref(false)
 const downloadingDocumentId = ref<number | null>(null)
+const removingDocumentId = ref<number | null>(null)
+const documentPendingRemoval = ref<CaseDocumentSummaryResponse | null>(null)
+const removalDialogOpen = ref(false)
 const listErrorMessage = ref('')
 const actionErrorMessage = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -104,6 +117,45 @@ const handleDownload = async (document: CaseDocumentSummaryResponse) => {
   } finally {
     downloadingDocumentId.value = null
   }
+}
+
+const requestRemoval = (document: CaseDocumentSummaryResponse) => {
+  documentPendingRemoval.value = document
+  removalDialogOpen.value = true
+}
+
+const removalErrorMessage = (error: unknown) => {
+  if (error instanceof DocumentRemovalError && error.reason === 'not-found') {
+    return '文件已不存在或不属于当前案件，请重新加载。'
+  }
+  return '文件移除失败，请稍后重试。'
+}
+
+const confirmRemoval = async () => {
+  const document = documentPendingRemoval.value
+  if (!document) {
+    return
+  }
+
+  removingDocumentId.value = document.id
+  actionErrorMessage.value = ''
+  try {
+    await removeCaseDocument(props.caseId, document.id)
+    removalDialogOpen.value = false
+    documentPendingRemoval.value = null
+    await loadDocuments()
+  } catch (error) {
+    actionErrorMessage.value = removalErrorMessage(error)
+    removalDialogOpen.value = false
+    documentPendingRemoval.value = null
+  } finally {
+    removingDocumentId.value = null
+  }
+}
+
+const cancelRemoval = () => {
+  removalDialogOpen.value = false
+  documentPendingRemoval.value = null
 }
 
 const formatFileSize = (bytes: number) => {
@@ -196,19 +248,34 @@ const formatDateTime = (value: string) => {
               </div>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            :disabled="downloadingDocumentId === document.id"
-            @click="handleDownload(document)"
-          >
-            <SafeIcon
-              :name="downloadingDocumentId === document.id ? 'Loader2' : 'Download'"
-              :size="16"
-              :class="downloadingDocumentId === document.id ? 'mr-2 animate-spin' : 'mr-2'"
-            />
-            {{ downloadingDocumentId === document.id ? '下载中...' : '下载' }}
-          </Button>
+          <div class="flex shrink-0 items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              :disabled="downloadingDocumentId === document.id || removingDocumentId === document.id"
+              @click="handleDownload(document)"
+            >
+              <SafeIcon
+                :name="downloadingDocumentId === document.id ? 'Loader2' : 'Download'"
+                :size="16"
+                :class="downloadingDocumentId === document.id ? 'mr-2 animate-spin' : 'mr-2'"
+              />
+              {{ downloadingDocumentId === document.id ? '下载中...' : '下载' }}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              :disabled="downloadingDocumentId === document.id || removingDocumentId === document.id"
+              @click="requestRemoval(document)"
+            >
+              <SafeIcon
+                :name="removingDocumentId === document.id ? 'Loader2' : 'Trash2'"
+                :size="16"
+                :class="removingDocumentId === document.id ? 'mr-2 animate-spin' : 'mr-2'"
+              />
+              {{ removingDocumentId === document.id ? '移除中...' : '移除' }}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -236,4 +303,31 @@ const formatDateTime = (value: string) => {
       </Empty>
     </CardContent>
   </Card>
+
+  <Dialog v-model:open="removalDialogOpen">
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>永久移除案件文件</DialogTitle>
+        <DialogDescription>
+          确定永久移除“{{ documentPendingRemoval?.originalFileName }}”吗？文件及其存储内容将被永久删除，完成后无法恢复。
+        </DialogDescription>
+      </DialogHeader>
+      <DialogFooter>
+        <Button
+          variant="outline"
+          :disabled="removingDocumentId !== null"
+          @click="cancelRemoval"
+        >
+          取消
+        </Button>
+        <Button
+          variant="destructive"
+          :disabled="removingDocumentId !== null"
+          @click="confirmRemoval"
+        >
+          {{ removingDocumentId !== null ? '移除中...' : '确认移除' }}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

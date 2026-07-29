@@ -63,3 +63,20 @@ export async function fetchCaseDocumentContent(
 
   return response.blob()
 }
+
+export async function deleteCaseDocument(
+  caseId: number,
+  documentId: number,
+): Promise<void> {
+  const response = await fetch(
+    `${CASES_ENDPOINT}/${caseId}/documents/${documentId}`,
+    { method: 'DELETE' },
+  )
+
+  if (!response.ok) {
+    throw new DocumentApiError(
+      `remove document ${documentId} from case ${caseId}`,
+      response.status,
+    )
+  }
+}

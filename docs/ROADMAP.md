@@ -29,7 +29,7 @@ Current engineering gaps:
 | Phase | Status | Repository evidence | Next action |
 | --- | --- | --- | --- |
 | Phase 1 — Engineering Baseline | Complete for the approved local-development scope | E1–E4 are committed; frontend checks/tests/build pass and the backend enforces its 90% line-coverage gate. E5 was deliberately reassigned to deployment configuration. | Begin Case document management. |
-| Phase 2 — Case Document Management | In progress | D1–D7 provide metadata persistence, local storage, validated upload, list/download APIs, and the live Case Detail file journey. | Implement D8, permanent removal of eligible accidental uploads. |
+| Phase 2 — Case Document Management | Complete for the approved local file-management scope | D1–D8 provide metadata persistence, local storage, validated upload, list/download/removal APIs, and the live Case Detail file journey. | Begin Phase 3 containerization. |
 | Phase 3 — Containerization | Not started | No Dockerfiles or Compose environment exist. | Start after the local upload/download journey works. |
 | Phase 4 — Continuous Integration | Not started | No repository CI workflow exists. | Start after reproducible local containers exist. |
 | Phase 5 — Minimal Document Generation | Planned | D-019 defines the deliberately limited generation boundary. | Start after containerization and CI. |
@@ -115,7 +115,7 @@ mutation operations.
 | Phase | Required testing strategy |
 | --- | --- |
 | Phase 1 — Engineering Baseline | Run the Java 21 Maven verification suite against the Flyway-managed MySQL test database; enforce backend coverage; run frontend unit/component tests, Astro type checking, and the production build. |
-| Phase 2 — Case Document Management | Unit-test storage contracts and validation; run metadata repository tests against MySQL; test local storage with temporary directories and path-safety cases; exercise multipart upload, compensation, list, and streaming-download behavior through HTTP integration tests; cover frontend loading, empty, error, upload, and download states plus a manual Case Detail journey. |
+| Phase 2 — Case Document Management | Unit-test storage contracts and validation; run metadata repository tests against MySQL; test local storage with temporary directories and path-safety cases; exercise multipart upload, compensation, list, streaming-download, and removal behavior through HTTP integration tests; cover frontend loading, empty, error, upload, download, confirmation, and removal states plus a manual Case Detail journey. |
 | Phase 3 — Containerization | Build each image from a clean context; verify non-root backend execution; start a fresh Compose environment; confirm Flyway startup, service health, frontend-to-backend routing, persistent database/file volumes, and restart behavior. |
 | Phase 4 — Continuous Integration | Run all backend, frontend, database, coverage, and image checks from a clean checkout; verify dependency caching does not hide missing setup; confirm failures block merging and successful builds produce reproducible results. |
 | Phase 5 — Minimal Document Generation | Test template/version persistence against MySQL; use representative DOCX fixtures for placeholders split across formatting runs and tables; verify missing/extra input handling, formatting preservation, generation compensation, immutable version traceability, draft/finalized transitions, and frontend review/error states. |
@@ -149,7 +149,7 @@ but combining ticket boundaries requires a separate scope review.
 | D5 — Document upload API (complete) | Upload validated PDF, DOC, and DOCX files up to 5 MB against an existing Case with compensating cleanup. | API tests for success, missing Case, invalid type, oversize file, and cleanup failure paths. | `feat: add case document upload API` |
 | D6 — Document read APIs (complete) | List Case documents and download content with safe response metadata. | API tests for list, download, empty result, and missing resources. | `feat: add case document read APIs` |
 | D7 — Frontend document integration (complete) | Replace only the Case Detail document mock flow with live upload, list, and download behavior. | Frontend tests and manual loading, empty, error, upload, and download checks. | `feat: integrate case documents` |
-| D8 — Accidental-upload removal | Permanently remove an eligible mistakenly uploaded Case file from metadata and binary storage with explicit confirmation. Keep archival and retention-controlled purge as separate lifecycle concerns. | Service/API tests for ownership, missing resources, metadata/storage consistency, and failures; frontend confirmation, success refresh, and error-state tests. | `feat: remove accidental case uploads` |
+| D8 — Case document removal (complete) | Permanently remove a Case document from metadata and binary storage with explicit confirmation. Future authorization is based on Case edit permission rather than document origin; retention-controlled purge remains a separate lifecycle concern. | Service/API tests for ownership, missing resources, metadata/storage consistency, and failures; frontend confirmation, success refresh, and error-state tests. | `feat: remove case documents` |
 
 ### Phase 3 — Containerization
 

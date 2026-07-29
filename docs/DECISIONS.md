@@ -298,9 +298,11 @@ known production-readiness requirement. Until scanning is implemented, uploaded
 documents must not be treated as trusted content and must not be executed or
 rendered by the backend.
 
-Permanent document deletion is also deferred. Its design depends on legal
-retention, audit, authorization, Case purge, and object-storage lifecycle rules.
-Archive behavior must not silently delete associated document binaries.
+General retention-controlled document purge remains deferred. Its design
+depends on legal retention, audit, authorization, Case purge, and object-storage
+lifecycle rules. D-020 separately defines customer removal of an individual
+Case document. Archive behavior must not silently delete associated document
+binaries.
 
 ---
 
@@ -365,6 +367,42 @@ automatic finalization.
 DOCX-to-PDF conversion, reviewed-document replacement, image support, OCR, and
 AI-assisted extraction are deferred. Future AI output is advisory and must
 remain subject to explicit human review before document finalization.
+
+---
+
+## 2026-07-29
+
+### D-020
+
+Status: Accepted
+
+A user who is authorized to edit a Case may permanently remove an individual
+document belonging to that Case. Permission is based on Case edit authority,
+not whether the document source is `UPLOADED` or `GENERATED`. Until
+authentication and authorization are implemented, this endpoint has the same
+temporary unauthenticated local-development boundary as the existing Case and
+document mutation APIs. Backend authorization is required before customer-data
+deployment.
+
+Removal deletes both document metadata and binary content. The application uses
+transactional best-effort coordination:
+
+1. Find the document by both Case ID and document ID.
+2. Delete and flush its metadata inside a MySQL transaction.
+3. Remove its binary through the idempotent `DocumentStorage` contract.
+4. Propagate storage failure so the metadata transaction rolls back.
+
+MySQL and file or object storage do not share an atomic transaction. A database
+commit failure or process crash after binary removal can still leave restored
+metadata whose binary is absent. Do not introduce two-phase commit. Before
+production storage contains customer legal files, evaluate a durable,
+retryable deletion workflow using explicit deletion state and a transactional
+outbox or reconciliation process.
+
+Document-removal audit history is deferred until the User domain provides a
+real actor identity. The future audit record should identify the actor, Case,
+document, original filename, source, removal time, and optional reason without
+requiring retention of the deleted binary.
 
 ---
 

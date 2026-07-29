@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  deleteCaseDocument,
   DocumentApiError,
   fetchCaseDocumentContent,
   fetchCaseDocuments,
@@ -100,5 +101,23 @@ describe('documentApi', () => {
 
     await expect(fetchCaseDocumentContent(7, 4))
       .rejects.toBeInstanceOf(DocumentApiError)
+  })
+
+  it('removes one document from its owning case', async () => {
+    fetchMock.mockResolvedValue(response(204))
+
+    await expect(deleteCaseDocument(7, 4)).resolves.toBeUndefined()
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8080/api/cases/7/documents/4',
+      { method: 'DELETE' },
+    )
+  })
+
+  it('preserves an unsuccessful removal status', async () => {
+    fetchMock.mockResolvedValue(response(404))
+
+    await expect(deleteCaseDocument(7, 4)).rejects.toMatchObject({
+      status: 404,
+    })
   })
 })

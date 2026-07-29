@@ -1,4 +1,5 @@
 import {
+  deleteCaseDocument,
   DocumentApiError,
   fetchCaseDocumentContent,
   fetchCaseDocuments,
@@ -19,6 +20,18 @@ export class DocumentUploadError extends Error {
   constructor(reason: DocumentUploadFailure) {
     super(`Document upload failed: ${reason}`)
     this.name = 'DocumentUploadError'
+    this.reason = reason
+  }
+}
+
+export type DocumentRemovalFailure = 'not-found' | 'unexpected'
+
+export class DocumentRemovalError extends Error {
+  readonly reason: DocumentRemovalFailure
+
+  constructor(reason: DocumentRemovalFailure) {
+    super(`Document removal failed: ${reason}`)
+    this.name = 'DocumentRemovalError'
     this.reason = reason
   }
 }
@@ -56,4 +69,21 @@ export function downloadCaseDocument(
   documentId: number,
 ): Promise<Blob> {
   return fetchCaseDocumentContent(caseId, documentId)
+}
+
+export async function removeCaseDocument(
+  caseId: number,
+  documentId: number,
+): Promise<void> {
+  try {
+    await deleteCaseDocument(caseId, documentId)
+  } catch (error) {
+    if (!(error instanceof DocumentApiError)) {
+      throw error
+    }
+
+    throw new DocumentRemovalError(
+      error.status === 404 ? 'not-found' : 'unexpected',
+    )
+  }
 }

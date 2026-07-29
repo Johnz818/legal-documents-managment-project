@@ -1,14 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  deleteCaseDocument,
   DocumentApiError,
   fetchCaseDocumentContent,
   fetchCaseDocuments,
   postCaseDocument,
 } from '@/api/documentApi'
 import {
+  DocumentRemovalError,
   DocumentUploadError,
   downloadCaseDocument,
   getCaseDocuments,
+  removeCaseDocument,
   uploadCaseDocument,
 } from '@/services/documentService'
 import type { CaseDocumentSummaryResponse } from '@/types/document'
@@ -20,6 +23,7 @@ vi.mock('@/api/documentApi', async (importOriginal) => {
     fetchCaseDocuments: vi.fn(),
     postCaseDocument: vi.fn(),
     fetchCaseDocumentContent: vi.fn(),
+    deleteCaseDocument: vi.fn(),
   }
 })
 
@@ -30,6 +34,7 @@ describe('documentService', () => {
     vi.mocked(fetchCaseDocuments).mockReset()
     vi.mocked(postCaseDocument).mockReset()
     vi.mocked(fetchCaseDocumentContent).mockReset()
+    vi.mocked(deleteCaseDocument).mockReset()
   })
 
   it('extracts case documents from the list response', async () => {
@@ -88,6 +93,40 @@ describe('documentService', () => {
     expect(new DocumentUploadError('too-large')).toMatchObject({
       name: 'DocumentUploadError',
       reason: 'too-large',
+    })
+  })
+
+  it('removes a case document through the API client', async () => {
+    vi.mocked(deleteCaseDocument).mockResolvedValue()
+
+    await expect(removeCaseDocument(7, 4)).resolves.toBeUndefined()
+    expect(deleteCaseDocument).toHaveBeenCalledWith(7, 4)
+  })
+
+  it.each([
+    [404, 'not-found'],
+    [500, 'unexpected'],
+  ] as const)('maps removal HTTP %i to %s', async (status, reason) => {
+    vi.mocked(deleteCaseDocument).mockRejectedValue(
+      new DocumentApiError('remove document', status),
+    )
+
+    await expect(removeCaseDocument(7, 4)).rejects.toEqual(
+      expect.objectContaining({ reason }),
+    )
+  })
+
+  it('does not hide non-HTTP removal failures', async () => {
+    const failure = new Error('network failure')
+    vi.mocked(deleteCaseDocument).mockRejectedValue(failure)
+
+    await expect(removeCaseDocument(7, 4)).rejects.toBe(failure)
+  })
+
+  it('exposes a typed removal error', () => {
+    expect(new DocumentRemovalError('not-found')).toMatchObject({
+      name: 'DocumentRemovalError',
+      reason: 'not-found',
     })
   })
 })

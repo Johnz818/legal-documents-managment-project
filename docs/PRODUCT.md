@@ -348,6 +348,7 @@ CaseDetailDocuments.vue
   → GET /api/cases/{caseId}/documents
   → POST /api/cases/{caseId}/documents
   → GET /api/cases/{caseId}/documents/{documentId}/content
+  → DELETE /api/cases/{caseId}/documents/{documentId}
 ```
 
 Case List displays live scalar case information and supports API-backed filtering by case-number prefix, case-name prefix, status, and exact lead-lawyer snapshot name. Its bulk-action controls remain frontend discovery data and do not change backend state.
@@ -372,15 +373,14 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 - Create and persist a new case through the manual creation workflow.
 - Edit and persist scalar case details.
 - Archive, discover, and restore cases.
-- Upload, list, and download PDF or Word files for an existing case.
+- Upload, list, download, and remove files for an existing case.
 
 ### Planned user journeys
 
-1. Remove an accidentally uploaded, eligible Case file.
-2. Assign user-backed supporting members and organize cases with tags.
-3. Work with case-related reminders using live data.
-4. Generate and review persisted documents from structured templates.
-5. Access case capabilities through authenticated and authorized user accounts.
+1. Assign user-backed supporting members and organize cases with tags.
+2. Work with case-related reminders using live data.
+3. Generate and review persisted documents from structured templates.
+4. Access case capabilities through authenticated and authorized user accounts.
 
 ## Product Rules
 
