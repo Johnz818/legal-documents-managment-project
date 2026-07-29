@@ -382,3 +382,10 @@ remain subject to explicit human review before document finalization.
   evaluate same-origin `/api` proxying. Until then, the localhost URL remains an
   intentional local-development constraint; public frontend environment values
   must never contain secrets.
+- During the runtime-configuration/deployment phase, replace the backend's
+  hardcoded `http://localhost:4321` CORS origin with environment-based allowed
+  origins. Keep CORS handling centralized in one early servlet filter, validate
+  configured origins at startup, and do not use a permissive wildcard origin.
+  When authentication is introduced, review allowed origins, credentials,
+  cookies, and CSRF protection together. Until then, the hardcoded origin
+  remains an intentional local-development setting.
