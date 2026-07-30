@@ -135,6 +135,11 @@ export default defineConfig({
   },
   compressHTML: false,
   vite: {
+    server: {
+      proxy: {
+        '/api': 'http://localhost:8080'
+      }
+    },
     resolve: {
       alias: {
         '@': '/src'

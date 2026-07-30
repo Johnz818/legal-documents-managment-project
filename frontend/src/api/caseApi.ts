@@ -7,7 +7,7 @@ import type {
   CaseUpdateRequest,
 } from '@/types/case'
 
-const CASES_ENDPOINT = 'http://localhost:8080/api/cases'
+const CASES_ENDPOINT = '/api/cases'
 
 export class CaseNotFoundError extends Error {
   constructor(caseId: number) {

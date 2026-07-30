@@ -44,7 +44,7 @@ describe('documentApi', () => {
       data: [documentSummary],
     })
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:8080/api/cases/7/documents',
+      '/api/cases/7/documents',
     )
   })
 
@@ -65,7 +65,7 @@ describe('documentApi', () => {
     await expect(postCaseDocument(7, file)).resolves.toEqual(documentSummary)
 
     const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe('http://localhost:8080/api/cases/7/documents')
+    expect(url).toBe('/api/cases/7/documents')
     expect(options.method).toBe('POST')
     expect(options.headers).toBeUndefined()
     expect(options.body).toBeInstanceOf(FormData)
@@ -92,7 +92,7 @@ describe('documentApi', () => {
 
     await expect(fetchCaseDocumentContent(7, 4)).resolves.toBe(content)
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:8080/api/cases/7/documents/4/content',
+      '/api/cases/7/documents/4/content',
     )
   })
 
@@ -108,7 +108,7 @@ describe('documentApi', () => {
 
     await expect(deleteCaseDocument(7, 4)).resolves.toBeUndefined()
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:8080/api/cases/7/documents/4',
+      '/api/cases/7/documents/4',
       { method: 'DELETE' },
     )
   })

@@ -435,6 +435,36 @@ publishing are deferred to the CI and release-image tickets.
 
 ---
 
+### D-022
+
+Status: Accepted
+
+The Astro frontend is packaged as a multi-stage container image. A Node and
+pnpm builder performs a frozen-lockfile install and generates the static site;
+the final image contains only the generated site and an unprivileged Nginx
+runtime. Source code, Node, pnpm, dependencies, tests, coverage output, and
+local environment files are excluded from the runtime image.
+
+The frontend calls the relative `/api` path rather than embedding a backend
+origin in browser JavaScript. During local development, Astro proxies `/api`
+to the local backend. In the production-style container, Nginx serves static
+files and proxies `/api` to the runtime-injected `LEGAL_API_UPSTREAM`. The same
+frontend image can therefore target different backend locations without being
+rebuilt.
+
+Nginx runs as a non-root user and listens on internal port 8080. Host ports,
+Compose service discovery, TLS termination, and public routing remain runtime
+infrastructure concerns. The proxy permits enough multipart request overhead
+for document uploads, while Spring remains authoritative for the 5 MB file
+limit and document validation.
+
+The same-origin proxy removes the need for CORS in the containerized browser
+journey. Existing backend CORS configuration remains available for direct and
+local-development access and will be externalized and reviewed with future
+deployment and authentication configuration.
+
+---
+
 ## Future considerations (TODO)
 
 - Evaluate Flyway compatibility with MySQL 9.7.
@@ -444,11 +474,6 @@ publishing are deferred to the CI and release-image tickets.
 - Define a legally appropriate retention and restricted permanent-purge policy, including related-document cleanup.
 - Select a malware-scanning approach and failure/quarantine policy before accepting untrusted production uploads.
 - Define document-object reconciliation and orphan cleanup if operational evidence requires it.
-- During the runtime-configuration/deployment phase, replace the frontend's
-  hardcoded local backend URL with environment-based API configuration and
-  evaluate same-origin `/api` proxying. Until then, the localhost URL remains an
-  intentional local-development constraint; public frontend environment values
-  must never contain secrets.
 - During the runtime-configuration/deployment phase, replace the backend's
   hardcoded `http://localhost:4321` CORS origin with environment-based allowed
   origins. Keep CORS handling centralized in one early servlet filter, validate

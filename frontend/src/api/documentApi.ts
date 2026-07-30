@@ -3,7 +3,7 @@ import type {
   CaseDocumentSummaryResponse,
 } from '@/types/document'
 
-const CASES_ENDPOINT = 'http://localhost:8080/api/cases'
+const CASES_ENDPOINT = '/api/cases'
 
 export class DocumentApiError extends Error {
   readonly status: number

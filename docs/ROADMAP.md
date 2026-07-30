@@ -30,7 +30,7 @@ Current engineering gaps:
 | --- | --- | --- | --- |
 | Phase 1 — Engineering Baseline | Complete for the approved local-development scope | E1–E4 are committed; frontend checks/tests/build pass and the backend enforces its 90% line-coverage gate. E5 was deliberately reassigned to deployment configuration. | Begin Case document management. |
 | Phase 2 — Case Document Management | Complete for the approved local file-management scope | D1–D8 provide metadata persistence, local storage, validated upload, list/download/removal APIs, and the live Case Detail file journey. | Begin Phase 3 containerization. |
-| Phase 3 — Containerization | In progress | C1 provides a verified non-root Java 21 backend image; no frontend image or Compose environment exists. | Implement C2, the frontend image. |
+| Phase 3 — Containerization | In progress | C1 provides a verified non-root Java 21 backend image; C2 provides a static frontend image with same-origin runtime API proxying. No Compose environment exists. | Implement C3, the Compose environment. |
 | Phase 4 — Continuous Integration | Not started | No repository CI workflow exists. | Start after reproducible local containers exist. |
 | Phase 5 — Minimal Document Generation | Planned | D-019 defines the deliberately limited generation boundary. | Start after containerization and CI. |
 | Phase 6 — Minimum Security | Not started | User, authentication, and backend authorization remain unimplemented. | Complete before a customer-data deployment. |
@@ -156,7 +156,7 @@ but combining ticket boundaries requires a separate scope review.
 | Ticket | Outcome | Verification | Suggested commit summary |
 | --- | --- | --- | --- |
 | C1 — Backend image (complete) | Build and run the Java 21 backend as a non-root container with runtime-injected database configuration and persistent local document storage. | Build and inspect the image; start against host MySQL; verify Java 21, UID/GID 10001, Flyway, Case API response, and byte-identical document persistence across container replacement. | `build: containerize backend` |
-| C2 — Frontend image | Build and serve the frontend through a reproducible production image. | Image build and browser smoke test with configured API routing. | `build: containerize frontend` |
+| C2 — Frontend image (complete) | Build and serve the frontend through a reproducible non-root production image with runtime-configured same-origin API routing. | Frontend checks and tests; image build and inspection; browser smoke test through the configured API proxy. | `build: containerize frontend` |
 | C3 — Compose environment | Start frontend, backend, MySQL, and object storage as one local environment. | Fresh `docker compose up` and end-to-end smoke test. | `build: add local compose environment` |
 
 ### Phase 4 — Continuous Integration

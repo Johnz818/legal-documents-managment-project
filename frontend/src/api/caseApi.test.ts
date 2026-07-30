@@ -68,7 +68,7 @@ describe('caseApi', () => {
     fetchMock.mockResolvedValue(response(200, { data: [] }))
 
     await expect(fetchCases()).resolves.toEqual({ data: [] })
-    expect(fetchMock).toHaveBeenCalledWith('http://localhost:8080/api/cases')
+    expect(fetchMock).toHaveBeenCalledWith('/api/cases')
   })
 
   it('adds only populated search criteria to the list request', async () => {
@@ -81,7 +81,7 @@ describe('caseApi', () => {
     })
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:8080/api/cases?caseNumberPrefix=%282026%29%E6%B2%AA&archiveState=ARCHIVED',
+      '/api/cases?caseNumberPrefix=%282026%29%E6%B2%AA&archiveState=ARCHIVED',
     )
   })
 
@@ -112,7 +112,7 @@ describe('caseApi', () => {
 
     await expect(postCase(createRequest)).resolves.toEqual(caseDetail)
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:8080/api/cases',
+      '/api/cases',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -143,7 +143,7 @@ describe('caseApi', () => {
     await putCase(7, updateRequest)
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:8080/api/cases/7',
+      '/api/cases/7',
       {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -177,7 +177,7 @@ describe('caseApi', () => {
       await postCaseArchiveState(7, action, { version: 3 })
 
       expect(fetchMock).toHaveBeenCalledWith(
-        `http://localhost:8080/api/cases/7/${action}`,
+        `/api/cases/7/${action}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
