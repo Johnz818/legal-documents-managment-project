@@ -406,6 +406,35 @@ requiring retention of the deleted binary.
 
 ---
 
+### D-021
+
+Status: Accepted
+
+The backend is packaged as a multi-stage container image. A Maven and Java 21
+builder compiles the Spring Boot executable JAR; the final image contains a
+Java 21 JRE and the JAR but not Maven, source code, test reports, local
+credentials, or document content. Backend tests and the coverage gate run
+outside the image build against the dedicated MySQL test database.
+
+The runtime process uses numeric UID and GID `10001:10001` rather than root.
+The image documents internal port 8080, while host, Compose, load-balancer, and
+cloud routing remain runtime concerns. Runtime environments may override the
+Spring port without rebuilding the image.
+
+Database credentials and endpoints remain runtime-injected configuration.
+Local filesystem document storage uses `/app/data/documents`, which must be
+backed by a persistent volume whenever local storage is used. This local volume
+supports development and single-instance verification only; production and
+horizontally scaled deployments still require the planned S3-compatible
+storage adapter.
+
+The Docker build uses a BuildKit cache for Maven dependencies. Base images are
+selected from the official Maven and Eclipse Temurin Java 21 image families.
+Digest pinning, automated base-image updates, image vulnerability scanning, and
+publishing are deferred to the CI and release-image tickets.
+
+---
+
 ## Future considerations (TODO)
 
 - Evaluate Flyway compatibility with MySQL 9.7.

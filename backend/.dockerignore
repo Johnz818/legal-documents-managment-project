@@ -1,0 +1,11 @@
+target/
+.local-data/
+
+.env
+.env.*
+.envrc
+
+.idea/
+.vscode/
+.DS_Store
+*.log
