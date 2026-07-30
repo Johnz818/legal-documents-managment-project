@@ -465,6 +465,40 @@ deployment and authentication configuration.
 
 ---
 
+### D-023
+
+Status: Accepted
+
+The local Compose environment runs the frontend, backend, and MySQL as
+replaceable containers on one private Compose network. Service names provide
+internal discovery: the frontend proxies `/api` to `backend:8080`, and the
+backend connects to `mysql:3306`. Only the frontend and backend publish host
+ports; MySQL remains internal and does not conflict with or depend on the host
+MySQL installation.
+
+The Compose MySQL version matches local development at 9.7.1. Flyway remains
+the only schema-management mechanism, and the backend starts only after the
+MySQL container reports healthy.
+
+Container replacement must not remove application data. MySQL stores its data
+in the `mysql-data` named volume, and the current local filesystem storage
+adapter stores document content in the independent `document-data` named
+volume. Normal Compose shutdown preserves both volumes; removing volumes is an
+explicit destructive reset.
+
+An object-storage container is intentionally not part of the current Compose
+environment because the backend does not yet have an S3-compatible
+`DocumentStorage` adapter. Adding an unused MinIO service would not validate an
+application path. Managed MySQL, S3-compatible storage, production secret
+management, and any optional MinIO-based adapter environment remain deployment
+or storage-adapter decisions.
+
+Local Compose credentials are injected through an ignored `.env` file using
+the names documented in `.env.example`. They are local-development
+configuration, not production secret management.
+
+---
+
 ## Future considerations (TODO)
 
 - Evaluate Flyway compatibility with MySQL 9.7.

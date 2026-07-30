@@ -19,9 +19,9 @@ Completed:
 Current engineering gaps:
 
 - Document templates, generation, and reminders remain mock-backed.
-- Runtime endpoints and allowed origins are not fully environment-driven.
-- The frontend image, Compose environment, CI/CD, deployment, authentication,
-  and operational monitoring are not implemented.
+- Backend allowed origins are not environment-driven.
+- CI/CD, deployment, authentication, and operational monitoring are not
+  implemented.
 - Template generation and reminders remain mock-backed.
 
 ## Progress Snapshot
@@ -30,7 +30,7 @@ Current engineering gaps:
 | --- | --- | --- | --- |
 | Phase 1 — Engineering Baseline | Complete for the approved local-development scope | E1–E4 are committed; frontend checks/tests/build pass and the backend enforces its 90% line-coverage gate. E5 was deliberately reassigned to deployment configuration. | Begin Case document management. |
 | Phase 2 — Case Document Management | Complete for the approved local file-management scope | D1–D8 provide metadata persistence, local storage, validated upload, list/download/removal APIs, and the live Case Detail file journey. | Begin Phase 3 containerization. |
-| Phase 3 — Containerization | In progress | C1 provides a verified non-root Java 21 backend image; C2 provides a static frontend image with same-origin runtime API proxying. No Compose environment exists. | Implement C3, the Compose environment. |
+| Phase 3 — Containerization | Complete for the approved local-development scope | C1 and C2 provide non-root backend and frontend images; C3 connects them to isolated MySQL 9.7.1 with persistent database and document volumes. | Begin CI1, the application verification workflow. |
 | Phase 4 — Continuous Integration | Not started | No repository CI workflow exists. | Start after reproducible local containers exist. |
 | Phase 5 — Minimal Document Generation | Planned | D-019 defines the deliberately limited generation boundary. | Start after containerization and CI. |
 | Phase 6 — Minimum Security | Not started | User, authentication, and backend authorization remain unimplemented. | Complete before a customer-data deployment. |
@@ -62,9 +62,13 @@ containerization and deployment configuration require it.
 ### Phase 3 — Containerization
 
 - Add independently buildable backend and frontend images.
-- Add a Compose environment for the frontend, backend, MySQL, and object
-  storage.
+- Add a Compose environment for the frontend, backend, MySQL, and persistent
+  local document storage.
 - Preserve environment-based secret configuration.
+
+S3-compatible object storage remains deferred until the backend has an adapter
+that can exercise it; an unused object-storage container is not part of the
+local Compose baseline.
 
 ### Phase 4 — Continuous Integration
 
@@ -157,7 +161,7 @@ but combining ticket boundaries requires a separate scope review.
 | --- | --- | --- | --- |
 | C1 — Backend image (complete) | Build and run the Java 21 backend as a non-root container with runtime-injected database configuration and persistent local document storage. | Build and inspect the image; start against host MySQL; verify Java 21, UID/GID 10001, Flyway, Case API response, and byte-identical document persistence across container replacement. | `build: containerize backend` |
 | C2 — Frontend image (complete) | Build and serve the frontend through a reproducible non-root production image with runtime-configured same-origin API routing. | Frontend checks and tests; image build and inspection; browser smoke test through the configured API proxy. | `build: containerize frontend` |
-| C3 — Compose environment | Start frontend, backend, MySQL, and object storage as one local environment. | Fresh `docker compose up` and end-to-end smoke test. | `build: add local compose environment` |
+| C3 — Compose environment (complete) | Start frontend, backend, and MySQL as one local environment with independent persistent database and local-document volumes. | Fresh `docker compose up`; Flyway and service-routing checks; end-to-end Case and document smoke test; container-replacement persistence verification. | `build: add local compose environment` |
 
 ### Phase 4 — Continuous Integration
 

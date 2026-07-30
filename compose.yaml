@@ -1,0 +1,49 @@
+services:
+  mysql:
+    image: mysql:9.7.1
+    environment:
+      MYSQL_DATABASE: legal_case_management
+      MYSQL_USER: ${LEGAL_DB_USERNAME:?Set LEGAL_DB_USERNAME}
+      MYSQL_PASSWORD: ${LEGAL_DB_PASSWORD:?Set LEGAL_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${LEGAL_DB_ROOT_PASSWORD:?Set LEGAL_DB_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --host=127.0.0.1 --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  backend:
+    image: legal-case-management-backend:local
+    build:
+      context: ./backend
+    environment:
+      LEGAL_DB_URL: jdbc:mysql://mysql:3306/legal_case_management
+      LEGAL_DB_USERNAME: ${LEGAL_DB_USERNAME:?Set LEGAL_DB_USERNAME}
+      LEGAL_DB_PASSWORD: ${LEGAL_DB_PASSWORD:?Set LEGAL_DB_PASSWORD}
+      LEGAL_DOCUMENT_STORAGE_ROOT: /app/data/documents
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - document-data:/app/data/documents
+
+  frontend:
+    image: legal-case-management-frontend:local
+    build:
+      context: ./frontend
+    environment:
+      LEGAL_API_UPSTREAM: http://backend:8080
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "4321:8080"
+
+volumes:
+  mysql-data:
+  document-data:
