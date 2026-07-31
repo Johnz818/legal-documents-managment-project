@@ -524,9 +524,30 @@ staging, or production secrets. Actions are pinned to reviewed commit SHAs.
 The MySQL credentials committed in the workflow are non-production values
 whose authority and lifetime are limited to one disposable CI job.
 
-CI1 is not fully operational until the repository is hosted on GitHub and its
-first hosted Backend and Frontend jobs pass. Branch protection is configured
-only after GitHub registers those successful check names.
+CI1 became operational after its first hosted Backend and Frontend jobs passed.
+The repository ruleset requires those registered checks for changes to `main`.
+
+---
+
+### D-025
+
+Status: Accepted
+
+GitHub Actions verifies the backend and frontend container images as
+independent parallel checks on pull requests and pushes to `main`. CI builds
+the same Dockerfiles and build contexts used by local development without
+publishing images or authenticating to a registry.
+
+Container verification covers only application-owned images. MySQL remains a
+pinned vendor image and is already pulled, started, and exercised by CI1's
+Flyway-managed integration tests; the repository does not build a custom
+MySQL image.
+
+CI2 intentionally verifies packaging rather than runtime orchestration. A
+future automated Compose smoke test must be justified as a separate ticket and
+must not introduce production credentials or persistent CI data. Build caching
+and image publishing remain deferred until measured build time or an approved
+deployment target requires them.
 
 ---
 

@@ -1,0 +1,38 @@
+name: Container Image Verification
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-verification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    name: Container / ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Backend
+            context: backend
+            image: legal-case-management-backend
+          - name: Frontend
+            context: frontend
+            image: legal-case-management-frontend
+    env:
+      DOCKER_BUILDKIT: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Build ${{ matrix.name }} image
+        run: docker build --tag "${{ matrix.image }}:ci" "${{ matrix.context }}"
