@@ -546,8 +546,13 @@ MySQL image.
 CI2 intentionally verifies packaging rather than runtime orchestration. A
 future automated Compose smoke test must be justified as a separate ticket and
 must not introduce production credentials or persistent CI data. Build caching
-and image publishing remain deferred until measured build time or an approved
-deployment target requires them.
+remains deferred until measured build time justifies it.
+
+Image publishing remains tracked as CI3 but is deferred until P1 approves the
+deployment platform and container registry. CI3 must not begin without explicit
+decisions for registry ownership, image names, immutable tags, deployment
+consumers, supported architectures, credential management, retention, and the
+required provenance, SBOM, or signing controls.
 
 ---
 
