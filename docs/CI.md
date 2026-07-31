@@ -42,13 +42,27 @@ The pnpm package store is cached using `frontend/pnpm-lock.yaml`. The workflow
 does not cache `node_modules`, Astro output, or build output; every run must
 still perform installation and build steps successfully.
 
+## Container image verification
+
+The container workflow builds the two application-owned images independently
+and in parallel:
+
+- `backend/Dockerfile` from the `backend` build context;
+- `frontend/Dockerfile` from the `frontend` build context.
+
+The workflow performs clean Docker builds only. It does not log in to a
+registry, publish images, run deployments, or receive registry or cloud
+credentials. MySQL is not an application-owned image: CI1 already pulls and
+starts the pinned MySQL image before exercising Flyway and the integration
+tests against it.
+
 ## Workflow security
 
 The workflow has read-only repository-content permission. Third-party and
 GitHub-maintained actions are pinned to reviewed commit SHAs, with release
 versions recorded in comments for maintainability.
 
-CI1 does not use:
+The verification workflows do not use:
 
 - repository secrets;
 - local `.env` files;
@@ -76,6 +90,13 @@ pnpm exec astro check
 pnpm build
 ```
 
+Build the application-owned container images:
+
+```bash
+docker build --tag legal-case-management-backend:ci ./backend
+docker build --tag legal-case-management-frontend:ci ./frontend
+```
+
 ## Hosted verification
 
 The workflow becomes active after this repository is pushed to GitHub. The
@@ -85,3 +106,6 @@ be downloaded before CI1 is considered fully operational.
 Branch protection or a repository ruleset should require the Backend and
 Frontend checks only after GitHub has registered their names through a
 successful workflow run.
+
+Add `Container / Backend` and `Container / Frontend` as required checks only
+after their first successful hosted run registers those names.
