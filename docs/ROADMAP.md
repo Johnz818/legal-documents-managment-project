@@ -20,8 +20,8 @@ Current engineering gaps:
 
 - Document templates, generation, and reminders remain mock-backed.
 - Backend allowed origins are not environment-driven.
-- CI/CD, deployment, authentication, and operational monitoring are not
-  implemented.
+- Image publishing, deployment, authentication, and operational monitoring are
+  not implemented.
 - Template generation and reminders remain mock-backed.
 
 ## Progress Snapshot
@@ -31,7 +31,7 @@ Current engineering gaps:
 | Phase 1 — Engineering Baseline | Complete for the approved local-development scope | E1–E4 are committed; frontend checks/tests/build pass and the backend enforces its 90% line-coverage gate. E5 was deliberately reassigned to deployment configuration. | Begin Case document management. |
 | Phase 2 — Case Document Management | Complete for the approved local file-management scope | D1–D8 provide metadata persistence, local storage, validated upload, list/download/removal APIs, and the live Case Detail file journey. | Begin Phase 3 containerization. |
 | Phase 3 — Containerization | Complete for the approved local-development scope | C1 and C2 provide non-root backend and frontend images; C3 connects them to isolated MySQL 9.7.1 with persistent database and document volumes. | Begin CI1, the application verification workflow. |
-| Phase 4 — Continuous Integration | In progress | CI1 and CI2 are complete: application verification and both application-owned image builds pass on GitHub. | Evaluate CI3 against the deployment roadmap before introducing image publishing. |
+| Phase 4 — Continuous Integration | Complete for verification scope; publishing deferred | CI1 and CI2 are complete: application verification and both application-owned image builds pass on GitHub. CI3 remains tracked but depends on an approved deployment architecture. | Begin G1 template persistence; resume CI3 after P1 selects the deployment platform and registry. |
 | Phase 5 — Minimal Document Generation | Planned | D-019 defines the deliberately limited generation boundary. | Start after containerization and CI. |
 | Phase 6 — Minimum Security | Not started | User, authentication, and backend authorization remain unimplemented. | Complete before a customer-data deployment. |
 | Phase 7 — Cloud Deployment | Not started | Hosting and production architecture are not selected. | Begin after CI and minimum security decisions. |
@@ -76,6 +76,17 @@ local Compose baseline.
 - Run frontend tests, type checks, and production builds.
 - Verify container image builds.
 - Publish versioned images only after a deployment target is selected.
+
+CI3 is a reserved future ticket rather than the next delivery step. Resume it
+after P1 selects the deployment platform and container registry. Before image
+publishing is implemented, approve:
+
+- registry ownership and image names;
+- immutable release-tag and source-commit conventions;
+- the deployment consumer and supported CPU architectures;
+- registry credential and secret-management boundaries;
+- image retention and cleanup policy;
+- whether provenance, SBOM generation, and image signing are required.
 
 ### Phase 5 — Minimal Document Generation
 
@@ -169,7 +180,7 @@ but combining ticket boundaries requires a separate scope review.
 | --- | --- | --- | --- |
 | CI1 — Verification workflow (complete) | Run backend MySQL tests and coverage plus frontend tests, checks, and build on GitHub Actions. | Backend and Frontend jobs pass on GitHub; the JaCoCo artifact is available and the workflow is warning-free. | `ci: add application verification workflow` |
 | CI2 — Container verification (complete) | Build backend and frontend container images on pull requests without publishing. | `Container / Backend` and `Container / Frontend` pass on GitHub without publishing packages. | `ci: verify container images` |
-| CI3 — Image publishing | Publish immutable, versioned images after release and hosting conventions are approved. | Dry run and test release with traceable tags. | `ci: publish release images` |
+| CI3 — Image publishing (deferred until P1) | Publish immutable, versioned images only after the deployment platform, registry, naming, tagging, credential, retention, architecture, and supply-chain requirements are approved. | Dry run and test release with traceable immutable tags; confirm the selected deployment consumer can pull the images. | `ci: publish release images` |
 
 ### Phase 5 — Minimal Document Generation
 
@@ -199,7 +210,7 @@ extraction.
 
 | Ticket | Outcome | Verification | Suggested commit summary |
 | --- | --- | --- | --- |
-| P1 — Deployment architecture | Select and document hosting, database, storage, domains, TLS, secret management, and expected cost. | Architecture and security review. | `docs: define cloud deployment architecture` |
+| P1 — Deployment architecture | Select and document hosting, container registry, database, storage, domains, TLS, secret management, and expected cost; unblock CI3. | Architecture and security review. | `docs: define cloud deployment architecture` |
 | P2 — Production configuration | Add production-safe runtime profiles and secret injection without committed credentials. | Staging configuration validation and startup. | `chore: add production configuration` |
 | P3 — Staging deployment | Deploy the complete system with synthetic data to the selected staging environment. | End-to-end smoke test and migration verification. | `ops: deploy staging environment` |
 | P4 — Release workflow | Document and automate controlled deployment, migration, rollback, and recovery. | Deployment and rollback rehearsal. | `ci: add production release workflow` |
