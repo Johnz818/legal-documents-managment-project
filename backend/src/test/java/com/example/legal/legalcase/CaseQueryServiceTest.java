@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -74,6 +75,42 @@ class CaseQueryServiceTest {
                 "李律师",
                 false
         );
+    }
+
+    @Test
+    void searchesByCaseNameOnly() {
+        when(caseRepository.searchTop10(null, "合同纠纷", null, null, false))
+                .thenReturn(List.of());
+        CaseQueryService service = new CaseQueryService(caseRepository);
+
+        service.getCases(null, " 合同纠纷 ", null, null, CaseArchiveState.ACTIVE);
+
+        verify(caseRepository).searchTop10(null, "合同纠纷", null, null, false);
+        verify(caseRepository, never()).findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc();
+    }
+
+    @Test
+    void searchesByStatusOnly() {
+        when(caseRepository.searchTop10(null, null, "IN_TRIAL", null, false))
+                .thenReturn(List.of());
+        CaseQueryService service = new CaseQueryService(caseRepository);
+
+        service.getCases(null, null, CaseStatus.IN_TRIAL, null, CaseArchiveState.ACTIVE);
+
+        verify(caseRepository).searchTop10(null, null, "IN_TRIAL", null, false);
+        verify(caseRepository, never()).findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc();
+    }
+
+    @Test
+    void searchesByLeadLawyerOnly() {
+        when(caseRepository.searchTop10(null, null, null, "张律师", false))
+                .thenReturn(List.of());
+        CaseQueryService service = new CaseQueryService(caseRepository);
+
+        service.getCases(null, null, null, " 张律师 ", CaseArchiveState.ACTIVE);
+
+        verify(caseRepository).searchTop10(null, null, null, "张律师", false);
+        verify(caseRepository, never()).findTop10ByArchivedFalseOrderByCreatedAtDescIdDesc();
     }
 
     @ParameterizedTest
