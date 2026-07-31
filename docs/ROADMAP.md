@@ -31,7 +31,7 @@ Current engineering gaps:
 | Phase 1 — Engineering Baseline | Complete for the approved local-development scope | E1–E4 are committed; frontend checks/tests/build pass and the backend enforces its 90% line-coverage gate. E5 was deliberately reassigned to deployment configuration. | Begin Case document management. |
 | Phase 2 — Case Document Management | Complete for the approved local file-management scope | D1–D8 provide metadata persistence, local storage, validated upload, list/download/removal APIs, and the live Case Detail file journey. | Begin Phase 3 containerization. |
 | Phase 3 — Containerization | Complete for the approved local-development scope | C1 and C2 provide non-root backend and frontend images; C3 connects them to isolated MySQL 9.7.1 with persistent database and document volumes. | Begin CI1, the application verification workflow. |
-| Phase 4 — Continuous Integration | In progress | CI1 is implemented with parallel backend/MySQL and frontend verification jobs; the first GitHub-hosted run is pending. | Push the CI1 branch, verify it remotely, then implement CI2. |
+| Phase 4 — Continuous Integration | In progress | CI1 is complete: parallel backend/MySQL and frontend jobs pass on GitHub, and the JaCoCo report is retained as an artifact. | Implement CI2 container-image verification. |
 | Phase 5 — Minimal Document Generation | Planned | D-019 defines the deliberately limited generation boundary. | Start after containerization and CI. |
 | Phase 6 — Minimum Security | Not started | User, authentication, and backend authorization remain unimplemented. | Complete before a customer-data deployment. |
 | Phase 7 — Cloud Deployment | Not started | Hosting and production architecture are not selected. | Begin after CI and minimum security decisions. |
@@ -167,7 +167,7 @@ but combining ticket boundaries requires a separate scope review.
 
 | Ticket | Outcome | Verification | Suggested commit summary |
 | --- | --- | --- | --- |
-| CI1 — Verification workflow (hosted run pending) | Run backend MySQL tests and coverage plus frontend tests, checks, and build on GitHub Actions. | Local equivalents and fresh-MySQL behavior verified; first passing GitHub-hosted run remains required. | `ci: add application verification workflow` |
+| CI1 — Verification workflow (complete) | Run backend MySQL tests and coverage plus frontend tests, checks, and build on GitHub Actions. | Backend and Frontend jobs pass on GitHub; the JaCoCo artifact is available and the workflow is warning-free. | `ci: add application verification workflow` |
 | CI2 — Container verification | Build backend and frontend container images on pull requests without publishing. | Passing image-build workflow. | `ci: verify container images` |
 | CI3 — Image publishing | Publish immutable, versioned images after release and hosting conventions are approved. | Dry run and test release with traceable tags. | `ci: publish release images` |
 
