@@ -499,6 +499,37 @@ configuration, not production secret management.
 
 ---
 
+### D-024
+
+Status: Accepted
+
+GitHub Actions reproduces the established backend and frontend verification
+gates in independent parallel jobs on pull requests and pushes to `main`.
+
+The backend job uses Java 21 and an ephemeral MySQL 9.7.1 service initialized
+with explicit disposable test credentials. Maven verification applies the
+Flyway migrations to `legal_case_management_test`, runs the unit and real-MySQL
+integration tests, validates JPA mappings, and enforces the 90% JaCoCo line
+coverage gate. The JaCoCo HTML report is retained briefly as a workflow
+artifact.
+
+The frontend job uses Node 22, the pnpm version declared in
+`frontend/package.json`, a frozen-lockfile install, tests, Astro checking, and
+the production build. Dependency caches may store Maven artifacts and the pnpm
+package store, but must not cache application build output, `node_modules`, test
+results, or databases.
+
+The workflow has read-only repository permission and does not consume local,
+staging, or production secrets. Actions are pinned to reviewed commit SHAs.
+The MySQL credentials committed in the workflow are non-production values
+whose authority and lifetime are limited to one disposable CI job.
+
+CI1 is not fully operational until the repository is hosted on GitHub and its
+first hosted Backend and Frontend jobs pass. Branch protection is configured
+only after GitHub registers those successful check names.
+
+---
+
 ## Future considerations (TODO)
 
 - Evaluate Flyway compatibility with MySQL 9.7.
