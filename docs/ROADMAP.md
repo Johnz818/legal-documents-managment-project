@@ -22,7 +22,6 @@ Current engineering gaps:
 - Backend allowed origins are not environment-driven.
 - Image publishing, deployment, authentication, and operational monitoring are
   not implemented.
-- Template generation and reminders remain mock-backed.
 
 ## Progress Snapshot
 
@@ -32,7 +31,7 @@ Current engineering gaps:
 | Phase 2 — Case Document Management | Complete for the approved local file-management scope | D1–D8 provide metadata persistence, local storage, validated upload, list/download/removal APIs, and the live Case Detail file journey. | Begin Phase 3 containerization. |
 | Phase 3 — Containerization | Complete for the approved local-development scope | C1 and C2 provide non-root backend and frontend images; C3 connects them to isolated MySQL 9.7.1 with persistent database and document volumes. | Begin CI1, the application verification workflow. |
 | Phase 4 — Continuous Integration | Complete for verification scope; publishing deferred | CI1 and CI2 are complete: application verification and both application-owned image builds pass on GitHub. CI3 remains tracked but depends on an approved deployment architecture. | Begin G1 template persistence; resume CI3 after P1 selects the deployment platform and registry. |
-| Phase 5 — Minimal Document Generation | Planned | D-019 defines the deliberately limited generation boundary. | Start after containerization and CI. |
+| Phase 5 — Minimal Document Generation | Planned | D-019 and D-026 define the deliberately limited generation boundary and versioned template model. | Start G1 — Template persistence. |
 | Phase 6 — Minimum Security | Not started | User, authentication, and backend authorization remain unimplemented. | Complete before a customer-data deployment. |
 | Phase 7 — Cloud Deployment | Not started | Hosting and production architecture are not selected. | Begin after CI and minimum security decisions. |
 | Phase 8 — Reliability and Performance | Not started | No operational baseline exists. | Begin after a staging deployment is reproducible. |
@@ -94,7 +93,7 @@ publishing is implemented, approve:
 - Define structured scalar template fields.
 - Detect controlled placeholders and require field definitions to match before
   publication.
-- Generate DOCX drafts from approved Case and user-provided values.
+- Generate DOCX drafts from resolved Case and user-provided values.
 - Require explicit human finalization.
 - Keep PDF conversion, browser editing, images, OCR, and AI deferred.
 
@@ -193,8 +192,8 @@ but combining ticket boundaries requires a separate scope review.
 | Ticket | Outcome | Verification | Suggested commit summary |
 | --- | --- | --- | --- |
 | G1 — Template persistence | Persist template identity, immutable DOCX versions, and structured scalar field definitions. | Flyway and repository integration tests against MySQL. | `feat: persist versioned document templates` |
-| G2 — Template API | Upload, list, and retrieve DOCX templates and their field definitions. | API tests for valid templates, validation failures, missing resources, and immutable-version behavior. | `feat: add document template API` |
-| G3 — DOCX renderer | Replace approved scalar placeholders while preserving supported basic formatting. | Renderer fixture tests for replacement, missing values, unsupported constructs, and unchanged formatting. | `feat: render docx templates` |
+| G2 — Template API | Upload, list, and retrieve DOCX templates; detect controlled placeholders and require matching field definitions before immutable publication. | API tests for valid publication, placeholder/field mismatches, validation failures, missing resources, and immutable-version behavior. | `feat: add document template API` |
+| G3 — DOCX renderer | Replace resolved scalar field values while preserving supported basic formatting. | Renderer fixture tests for replacement, missing values, unsupported constructs, and unchanged formatting. | `feat: render docx templates` |
 | G4 — Draft generation | Coordinate Case values, user input, rendering, storage, metadata, compensation, and generation records. | Service and API tests for success, validation, storage failure, and persistence cleanup. | `feat: generate document drafts` |
 | G5 — Human finalization | Download drafts and explicitly finalize reviewed generation records without automatic approval. | Tests for draft retrieval, valid finalization, repeated finalization, and stale or missing records. | `feat: finalize generated documents` |
 | G6 — Frontend integration | Replace only the relevant template and generation mock flow with draft generation and explicit finalization. | Frontend tests and manual template-selection, input, generation, download, error, and finalization checks. | `feat: integrate document generation` |
@@ -207,6 +206,19 @@ before accepting either dependency.
 Deferred generation work includes reviewed-document replacement, DOCX-to-PDF
 conversion, advanced template syntax, image uploads, OCR, and AI-assisted
 extraction.
+
+Later tickets have explicit decision gates:
+
+- before G2, confirm the controlled-placeholder grammar and publication error
+  behavior;
+- before G3, select the rendering library and supported DOCX constructs through
+  the representative-fixture spike;
+- before G4, decide the generation-record identity, relationships, and retained
+  values;
+- before G5, decide finalization meaning, reversibility, finalized-output
+  immutability, and correction behavior;
+- before G6, define the human review experience without introducing the
+  deferred browser-based Word editor or reviewed-document replacement flow.
 
 ### Future Evidence-Assisted Generation (deferred)
 

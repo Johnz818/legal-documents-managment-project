@@ -65,14 +65,16 @@ Example:
 Users can:
 
 - Manage preset and custom document templates.
-- Define template variables.
+- Define template fields represented by controlled placeholders.
 - Select a case and template.
 - Generate a document using case and lawyer data.
-- Preview and edit generated content.
+- Review generation inputs and the generated draft, then explicitly finalize
+  the reviewed result.
 
 Example:
 
-The template variable `{{案号}}` is replaced with `(2026)沪0115民初1001号`, and `{{主办律师}}` is replaced with `李律师`.
+The controlled placeholder `{{案号}}` represents a template field and is
+replaced with `(2026)沪0115民初1001号`; `{{主办律师}}` is replaced with `李律师`.
 
 #### Evidence-assisted generation target
 
@@ -100,12 +102,13 @@ capabilities:
 
 - Template-field identification determines which values a reusable template
   requires. The initial capability uses explicit controlled DOCX placeholders.
-- Field-value acquisition supplies values from approved Case fields, explicit
+- Field-value acquisition supplies resolved Case values, explicit
   user input, or future evidence-extraction suggestions.
 
 The application supports system-provided and user-created reusable templates.
-Editing a generated document for one Case changes that document only; it does
-not modify the reusable template or publish a new template version.
+When document-specific editing is introduced, editing a generated document for
+one Case will change that document only; it will not modify the reusable
+template or publish a new template version.
 
 The initial product milestone requires Case-backed defaults, manual input,
 deterministic DOCX generation, and human finalization. OCR and AI-assisted
@@ -243,23 +246,24 @@ Key information:
 - Name
 - Template type
 - Description
-- Template content
-- Last modification date
 - Optional creator
 
 A template has a stable identity and one or more immutable published DOCX
-versions. Field definitions belong to the exact published version. A future
-template editor may maintain an unpublished working draft, but ordinary edits
-to a generated Case document do not create template versions.
+versions. Each published version owns the exact reusable DOCX content and field
+contract used for generation. A future template editor may maintain an
+unpublished working draft, but ordinary edits to a generated Case document do
+not create template versions.
 
 Template types:
 
 - `系统预设`
 - `用户自定义`
 
-### Template Variable
+### Template Field
 
-Maps a placeholder in a document template to case, user, or system data.
+Defines one structured value required or accepted by an exact published
+template version. A controlled placeholder is the marker for that field in the
+DOCX content.
 
 Each field has a stable key, Chinese display label, scalar value type, required
 state, deterministic default source, and display order. Future extracted values
@@ -283,13 +287,14 @@ Key information:
 
 - Document ID
 - Case ID
-- Template ID
+- Exact template version used
 - Document name
 - Case stage at generation time
 - Generation date
-- Generated or edited content
+- Generation lifecycle state
 
-A case may have multiple generated documents. Each generated document uses one template.
+A case may have multiple generated documents. Each generated document uses one
+exact published template version.
 
 ### Reminder
 
@@ -358,12 +363,13 @@ User
 
 Case
  ├─ has → Case Tags
- ├─ generates → Documents
+ ├─ has → Case Documents
  ├─ schedules → Reminders
  └─ produces → Notifications
 
-Document
- └─ uses → Document Template
+Document Generation
+ ├─ uses → Template Version
+ └─ produces → Generated Document
 
 Reminder
  ├─ produces → Calendar Event

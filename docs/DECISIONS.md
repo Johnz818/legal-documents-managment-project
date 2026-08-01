@@ -348,7 +348,7 @@ records; it does not represent multiple output formats.
 `DocumentGenerationService` owns the application workflow:
 
 1. Load the Case and selected template version.
-2. Resolve approved Case values and explicit user input.
+2. Resolve Case values and explicit user input.
 3. Validate required structured fields.
 4. Invoke `DocumentTemplateRenderer`.
 5. Store the generated binary through `DocumentStorage`.
@@ -603,11 +603,11 @@ rendering remain separate responsibilities:
 ```text
 Template definition -> declares the required values
 Value acquisition   -> Case value, manual value, or extraction suggestion
-Rendering           -> deterministically applies approved values to DOCX
+Rendering           -> deterministically applies resolved values to DOCX
 ```
 
 The initial deterministic model does not introduce a global semantic-field
-catalog. A template field may bind directly to an unambiguous approved Case
+catalog. A template field may bind directly to an unambiguous Case
 field through `CASE_FIELD` and a source key such as `caseNumber`, `courtName`,
 or `filingDate`; it may bind to a narrowly defined `SYSTEM_VALUE`; or it may
 remain a template-local `USER_INPUT`. These bindings describe how the current

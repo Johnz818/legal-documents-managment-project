@@ -20,8 +20,8 @@ and generation extension introduced in Phase 5.
 ### Domain boundaries
 
 The **Case domain** owns the identity and lifecycle of a legal Case. It is the
-source of Case facts that may be used during generation. It does not
-own document binaries, template definitions, storage references, or generation
+source of Case facts that may be used during generation. It does not own
+document binaries, template definitions, storage references, or generation
 lifecycle.
 
 The **Document domain** owns Case-related document metadata, reusable template
@@ -30,15 +30,14 @@ the document-generation lifecycle. It associates documents with a Case without
 moving Case identity or Case lifecycle into the Document domain.
 
 The **storage infrastructure** is responsible for storing and retrieving binary
-content. It does not
-decide what a template means, which values are valid, whether a document may be
-finalized, or which Case owns a document.
+content. It does not decide what a template means, which values are valid,
+whether a document may be finalized, or which Case owns a document.
 
 ```text
 Case domain                  Document domain                 Storage
 
 Case identity ─────────────> Case document metadata ──────> binary content
-Approved Case values ──────> Generation workflow
+Case values ────────────────> Generation workflow
                               Template and version contract
 ```
 
@@ -72,6 +71,9 @@ business template even as its reusable content changes over time.
 
 It owns the template's stable business identity and whether it is
 system-provided or user-created. It groups the template's published versions.
+A user-created template may have a creator, but the Document domain does not
+own User identity. The exact creator relationship remains open until the User
+domain is defined.
 
 It does not own Case-specific values, generated output, or edits made to one
 generated document. Editing generated output for a Case does not change the
@@ -121,10 +123,10 @@ values. It exists to preserve the relationship between the Case, the template
 contract, the values used, and the resulting output.
 
 The process requires durable generation traceability and supports draft output
-followed by explicit human finalization. A generation record is the possible
+followed by explicit human finalization. A generation record provides the
 durable representation of that traceability; it is not the generation process
-itself. Its exact structure, relationships, and state representation remain
-open for the generation tickets.
+itself. Its exact identity, structure, relationships, retained values, and
+state representation remain open for the generation tickets.
 
 Document Generation does not define template structure, implement binary
 storage, or approve legal facts automatically.
@@ -132,8 +134,8 @@ storage, or approve legal facts automatically.
 ### 2.6 Generated Document
 
 A **Generated Document** is the Case-related output produced by rendering an
-exact Template Version with resolved and reviewed values. In the document collection it is
-represented as a Case Document whose source is generated; generation
+exact Template Version with resolved input values. In the document collection,
+it is represented as a Case Document whose source is generated; generation
 traceability records why and how it was produced.
 
 It exists as a Case-specific work product. It is not a reusable template and is
@@ -430,6 +432,8 @@ future tickets.
 - Which combinations of source and source key are valid?
 - What exact constraints and metadata are required beyond the confirmed field
   contract?
+- How should a custom template's creator be represented after the User domain
+  is defined?
 
 ### Template publication and parsing
 
@@ -445,8 +449,6 @@ field discovery should be arbitrary.
 
 ### Generation traceability and lifecycle
 
-- Is Document Generation itself a durable business entity, or is only a record
-  of its traceability durable?
 - What is the exact generation-record model and its relationship to the
   resulting Case Document?
 - Which generation values must be retained for reproducibility?
