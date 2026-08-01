@@ -145,17 +145,16 @@ particular generation. Accepted field metadata includes:
 - optional source key;
 - display order.
 
-The G1 planning discussion proposed scalar types such as `TEXT`, `DATE`,
-`DECIMAL`, and `BOOLEAN`, and proposed these deterministic source categories:
+G1 uses the scalar types `TEXT`, `DATE`, `DECIMAL`, and `BOOLEAN`, and these
+deterministic source categories:
 
 - `CASE_FIELD`: an approved, unambiguous Case value such as `caseNumber`, `courtName`, or `filingDate`;
 - `SYSTEM_VALUE`: a narrowly defined system value such as the current date;
 - `USER_INPUT`: a value entered for this generation and local to the template contract.
 
-These exact enum members are a G1 proposal, not a recorded architecture
-decision. Their final names, supported combinations, and database constraints
-remain open. The accepted decision is that the initial fields are structured
-scalars with a deterministic default source and optional source key.
+Case and system sources require a non-empty source key; user input must not
+have one. The exact approved Case and system source-key vocabularies remain a
+G2 publication decision. D-027 records the persistence constraints.
 
 Field definitions belong to a template version. Repeated definitions across versions are intentional: they make each published version self-contained and immutable rather than allowing a later central edit to change an old version's contract.
 
@@ -372,9 +371,11 @@ The following decisions are not finalized. They must remain explicit gates rathe
 
 ### 5.1 G1 persistence details
 
-- Final SQL names, lengths, check constraints, indexes, and cascade/restrict behavior for templates, versions, and fields.
-- Final enum names and allowed combinations for scalar value type, default source, and optional source key.
-- Exact template metadata beyond the accepted concepts, including which creator/ownership fields must wait for the User domain.
+- Creator and ownership relationships remain deferred until the User domain
+  provides a real identity.
+- Template archival or deletion behavior remains deferred until a business
+  lifecycle is approved; G1 preserves published history with restrictive
+  foreign keys.
 
 ### 5.2 Template publication API and validation
 
