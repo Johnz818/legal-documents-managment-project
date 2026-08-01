@@ -606,6 +606,24 @@ Value acquisition   -> Case value, manual value, or extraction suggestion
 Rendering           -> deterministically applies approved values to DOCX
 ```
 
+The initial deterministic model does not introduce a global semantic-field
+catalog. A template field may bind directly to an unambiguous approved Case
+field through `CASE_FIELD` and a source key such as `caseNumber`, `courtName`,
+or `filingDate`; it may bind to a narrowly defined `SYSTEM_VALUE`; or it may
+remain a template-local `USER_INPUT`. These bindings describe how the current
+application acquires a value and must not be treated as a universal legal
+ontology.
+
+Before structured AI extraction begins, evaluate a narrow governed semantic
+catalog for precise, reusable evidence-derived facts such as
+`LOAN_PRINCIPAL_AMOUNT` or `LOAN_TRANSFER_DATE`. Do not create ambiguous global
+definitions such as `PHONE`, `DATE`, or a generic legal-party role. Reusable
+definitions must be owner- and meaning-qualified where necessary, while
+contextual legal roles and wording may remain local to a template. Mapping a
+template field to such a future semantic definition is optional. This layered
+approach gives extraction a stable target without forcing every template field
+into centralized governance or expanding the G1 persistence scope.
+
 Future extracted generation values must record the suggestion, source document
 and page, confidence, and human-review state. OCR or AI may suggest template
 definitions during future template onboarding and may suggest values from Case
