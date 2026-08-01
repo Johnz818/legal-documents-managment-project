@@ -226,6 +226,10 @@ Future decision gates and TODOs:
 
 - define a representative, non-production evaluation dataset and expected
   field values with source pages;
+- before EG3, decide whether to introduce a narrow governed semantic-field
+  catalog for precise reusable evidence facts; keep its mapping optional,
+  retain template-local fields, and prohibit ambiguous generic definitions
+  such as `PHONE`, `DATE`, or context-dependent legal-party roles;
 - keep template-field discovery separate from evidence-value extraction;
 - store provenance and review state on generation values, not template fields;
 - choose a durable background-processing design without introducing Kafka
