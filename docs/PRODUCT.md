@@ -74,6 +74,45 @@ Example:
 
 The template variable `{{案号}}` is replaced with `(2026)沪0115民初1001号`, and `{{主办律师}}` is replaced with `李律师`.
 
+#### Evidence-assisted generation target
+
+The long-term generation journey uses information already present in Case
+files, including text documents, scanned PDFs, and images:
+
+```text
+Case files
+  -> parse text or run OCR
+  -> suggest values for known template fields
+  -> show the supporting document and page
+  -> human accepts, edits, or rejects each suggestion
+  -> deterministic template rendering
+  -> document-specific review and editing
+  -> explicit finalization
+```
+
+For example, a Case may contain a bank statement, chat screenshots, and a
+scanned pleading. The system may suggest `借款本金：200000元` for a declared
+template field and identify the supporting file and page. A lawyer must confirm
+or correct the value before the application generates the draft.
+
+Template-field identification and field-value acquisition are separate
+capabilities:
+
+- Template-field identification determines which values a reusable template
+  requires. The initial capability uses explicit controlled DOCX placeholders.
+- Field-value acquisition supplies values from approved Case fields, explicit
+  user input, or future evidence-extraction suggestions.
+
+The application supports system-provided and user-created reusable templates.
+Editing a generated document for one Case changes that document only; it does
+not modify the reusable template or publish a new template version.
+
+The initial product milestone requires Case-backed defaults, manual input,
+deterministic DOCX generation, and human finalization. OCR and AI-assisted
+extraction are future assistance capabilities, not prerequisites for the first
+usable generation workflow. AI output is never treated as an approved legal
+fact without human review.
+
 ### Reminder and Notification Management
 
 Users can:
@@ -208,6 +247,11 @@ Key information:
 - Last modification date
 - Optional creator
 
+A template has a stable identity and one or more immutable published DOCX
+versions. Field definitions belong to the exact published version. A future
+template editor may maintain an unpublished working draft, but ordinary edits
+to a generated Case document do not create template versions.
+
 Template types:
 
 - `系统预设`
@@ -216,6 +260,11 @@ Template types:
 ### Template Variable
 
 Maps a placeholder in a document template to case, user, or system data.
+
+Each field has a stable key, Chinese display label, scalar value type, required
+state, deterministic default source, and display order. Future extracted values
+also carry provenance, confidence, and human-review state; those facts belong
+to the generation result rather than the template definition.
 
 Examples:
 

@@ -556,6 +556,79 @@ required provenance, SBOM, or signing controls.
 
 ---
 
+## 2026-08-01
+
+### D-026
+
+Status: Accepted
+
+The Document Template aggregate uses a stable `DocumentTemplate` identity with
+immutable published `DocumentTemplateVersion` records. Each published version
+owns the exact DOCX storage metadata, a content SHA-256 digest, and its field
+contract. Versioning exists for generation traceability even when templates
+change infrequently.
+
+Editing a generated document for one Case does not modify its reusable template
+and does not create a template version. A new version is created only by an
+explicit reusable-template publication. If browser-based template authoring is
+introduced later, editable working drafts remain separate from immutable
+published versions.
+
+Template fields are relational child records of one published version rather
+than a JSON array. The initial field contract contains a stable key, display
+name, optional description, scalar value type, required state, deterministic
+default source, optional source key, and display order. This allows future
+generation values and extraction provenance to reference an exact field and
+keeps uniqueness, enum, and foreign-key guarantees in MySQL. The expected field
+count is small, so an indexed one-to-many join is not a material performance
+cost.
+
+Do not introduce a second NoSQL database for template manifests. MySQL JSON
+would be reasonable for an opaque manifest always loaded and validated as one
+unit, but it would move field-level integrity and future references into Java
+string-key validation without providing enough benefit for the approved
+workflow.
+
+The deterministic milestone identifies fields through explicit controlled DOCX
+placeholder tokens. System and custom templates follow the same publication
+contract: scan tokens, present detected fields, require their definitions to
+match, then publish the immutable version. Existing visual templates that use
+blank lines, formatting, `XXXX`, or prose annotations must be normalized before
+publication. Scanning and rendering must support placeholders split across Word
+formatting runs and placeholders inside supported tables.
+
+AI is not a template-field source. Template definition, value acquisition, and
+rendering remain separate responsibilities:
+
+```text
+Template definition -> declares the required values
+Value acquisition   -> Case value, manual value, or extraction suggestion
+Rendering           -> deterministically applies approved values to DOCX
+```
+
+Future extracted generation values must record the suggestion, source document
+and page, confidence, and human-review state. OCR or AI may suggest template
+definitions during future template onboarding and may suggest values from Case
+materials, but a human must approve the deterministic field contract and every
+legal fact used for finalization.
+
+The following designs are rejected or deferred for the current milestones:
+
+- one mutable template row that loses historical generation traceability;
+- event sourcing for the complete Template aggregate;
+- arbitrary AI discovery as the runtime template contract;
+- Word content controls, merge fields, and bookmarks as the initial marker
+  mechanism;
+- conditions, formulas, repeating collections, and automatic finalization.
+
+Library and provider choices remain decision gates rather than accepted
+dependencies. Evaluate Apache POI against docx4j using representative DOCX
+fixtures before selecting the renderer. Later extraction milestones must
+separately evaluate PDFBox/Tika, Chinese OCR options, background processing,
+and a provider-neutral structured AI extraction boundary.
+
+---
+
 ## Future considerations (TODO)
 
 - Evaluate Flyway compatibility with MySQL 9.7.

@@ -92,9 +92,15 @@ publishing is implemented, approve:
 
 - Persist reusable templates with immutable DOCX versions.
 - Define structured scalar template fields.
+- Detect controlled placeholders and require field definitions to match before
+  publication.
 - Generate DOCX drafts from approved Case and user-provided values.
 - Require explicit human finalization.
 - Keep PDF conversion, browser editing, images, OCR, and AI deferred.
+
+The deterministic milestone is intentionally useful without AI. Evidence
+extraction begins only after templates, field contracts, rendering, generation
+traceability, and human finalization work end to end.
 
 ### Phase 6 — Minimum Security
 
@@ -193,9 +199,45 @@ but combining ticket boundaries requires a separate scope review.
 | G5 — Human finalization | Download drafts and explicitly finalize reviewed generation records without automatic approval. | Tests for draft retrieval, valid finalization, repeated finalization, and stale or missing records. | `feat: finalize generated documents` |
 | G6 — Frontend integration | Replace only the relevant template and generation mock flow with draft generation and explicit finalization. | Frontend tests and manual template-selection, input, generation, download, error, and finalization checks. | `feat: integrate document generation` |
 
+Before G3, run a focused renderer-selection spike comparing Apache POI and
+docx4j against representative DOCX fixtures. Verify placeholders split across
+formatting runs and tables, formatting preservation, and unsupported constructs
+before accepting either dependency.
+
 Deferred generation work includes reviewed-document replacement, DOCX-to-PDF
 conversion, advanced template syntax, image uploads, OCR, and AI-assisted
 extraction.
+
+### Future Evidence-Assisted Generation (deferred)
+
+These capabilities remain tracked so the final business goal is not lost, but
+they do not expand G1-G6. Their delivery order must be reviewed against
+security, privacy, deployment, and representative-material evidence.
+
+| Milestone | Outcome | Required investigation and verification |
+| --- | --- | --- |
+| EG1 — Text extraction | Extract page-aware text from supported PDF and Word Case files and preserve source references. | Evaluate PDFBox and Apache Tika/POI; test mixed text layers, malformed files, page boundaries, and deterministic date/money parsing. |
+| EG2 — OCR and image extraction | Extract text from scanned PDFs, screenshots, and approved image formats through durable background jobs. | Evaluate Chinese accuracy and layout support across local and cloud OCR candidates; verify job retry, failure, privacy, cost, and source-page mapping. |
+| EG3 — Structured AI suggestions | Map normalized evidence to known field schemas through a provider-neutral structured-output boundary. | Evaluate typed-output validity, field accuracy, missing and false assertion rates, prompt-injection resistance, latency, cost, and model/provider data policy. |
+| EG4 — Human evidence review | Present every suggestion with confidence and document/page provenance so a user can accept, edit, or reject it. | Verify conflicts, low confidence, missing evidence, concurrent review, auditability, and that unapproved suggestions cannot reach finalization. |
+| EG5 — Template onboarding assistance | Suggest fields for legacy visual templates, then require a human to approve and publish a deterministic contract. | Test blanks, `XXXX`, prose annotations, formatting-run splits, tables, and false field detection; never use suggestions directly as the runtime contract. |
+
+Future decision gates and TODOs:
+
+- define a representative, non-production evaluation dataset and expected
+  field values with source pages;
+- keep template-field discovery separate from evidence-value extraction;
+- store provenance and review state on generation values, not template fields;
+- choose a durable background-processing design without introducing Kafka
+  unless measured workload requires it;
+- evaluate whether keyword/page filtering is sufficient before adding vector
+  retrieval or a vector database;
+- define sensitive-data retention, provider transmission, logging, redaction,
+  and deletion rules before processing customer legal materials;
+- define confidence thresholds and conflicting-evidence behavior without
+  allowing automatic legal-fact approval;
+- measure OCR/AI cost and latency before selecting providers or production
+  limits.
 
 ### Phase 6 — Minimum Security
 
