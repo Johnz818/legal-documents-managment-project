@@ -111,9 +111,11 @@ Generation values belong to the generation context. Future evidence provenance,
 confidence, and human-review state also belong to generation values rather than
 to reusable field definitions.
 
-The exact scalar-type and source-category members remain part of G1 detailed
-design. The confirmed model requires structured scalar fields with a
-deterministic default source and optional source key.
+The initial scalar types are `TEXT`, `DATE`, `DECIMAL`, and `BOOLEAN`. The
+deterministic source categories are `CASE_FIELD`, `SYSTEM_VALUE`, and
+`USER_INPUT`. Case and system sources require a source key; user input does not
+have one. The exact approved Case and system source-key vocabularies belong to
+the publication capability.
 
 ### 2.5 Document Generation
 
@@ -428,10 +430,7 @@ future tickets.
 
 ### Template fields and persistence details
 
-- What are the final scalar value types and deterministic source categories?
-- Which combinations of source and source key are valid?
-- What exact constraints and metadata are required beyond the confirmed field
-  contract?
+- Which exact Case and system source keys are accepted during publication?
 - How should a custom template's creator be represented after the User domain
   is defined?
 

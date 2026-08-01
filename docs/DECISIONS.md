@@ -647,6 +647,38 @@ and a provider-neutral structured AI extraction boundary.
 
 ---
 
+### D-027
+
+Status: Accepted
+
+G1 persists the Document Template aggregate in three relational tables:
+`document_templates`, `document_template_versions`, and
+`document_template_fields`.
+
+Template identities use `PRESET` and `CUSTOM`. Published versions use a
+positive number unique within their template, reference one globally unique
+opaque storage key, and retain the original filename, content type, size,
+lowercase SHA-256 digest, and publication timestamp. The digest verifies the
+identity and integrity of the exact published DOCX bytes; it is not unique
+because separate publications may intentionally use identical binary content.
+
+The initial scalar field types are `TEXT`, `DATE`, `DECIMAL`, and `BOOLEAN`.
+The deterministic source categories are `CASE_FIELD`, `SYSTEM_VALUE`, and
+`USER_INPUT`. Case and system sources require a non-empty source key; user input
+must not have one. Exact approved Case and system source-key vocabularies remain
+publication-layer decisions for G2.
+
+Version numbers and field keys are unique only within their parent. Field
+display order is also unique within a version. Foreign keys use restrictive
+deletion so published history cannot be removed through cascading persistence
+operations. Published version and field mappings are ORM-immutable, and their
+repositories expose only the persistence and lookup operations needed by the
+publication foundation rather than general deletion operations. G1 does not
+add template deletion, archival, creator snapshots, seed data, binary upload,
+placeholder parsing, or generation behavior.
+
+---
+
 ## Future considerations (TODO)
 
 - Evaluate Flyway compatibility with MySQL 9.7.
