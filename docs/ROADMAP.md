@@ -33,7 +33,7 @@ Current engineering gaps:
 | Phase 2 — Case Document Management | Complete for the approved local file-management scope | D1–D8 provide metadata persistence, local storage, validated upload, list/download/removal APIs, and the live Case Detail file journey. | Begin Phase 3 containerization. |
 | Phase 3 — Containerization | Complete for the approved local-development scope | C1 and C2 provide non-root backend and frontend images; C3 connects them to isolated MySQL 9.7.1 with persistent database and document volumes. | Begin CI1, the application verification workflow. |
 | Phase 4 — Continuous Integration | Complete for verification scope; publishing deferred | CI1 and CI2 are complete: application verification and both application-owned image builds pass on GitHub. CI3 remains tracked but depends on an approved deployment architecture. | Continue G2; resume CI3 after P1 selects the deployment platform and registry. |
-| Phase 5 — Minimal Document Generation | In progress; G1 complete | D-019, D-026, D-027, and D-028 define the deterministic vertical slice and expandable versioned-template foundation; migration V8 and the template persistence model are implemented. | Start G2 — Template API. |
+| Phase 5 — Minimal Document Generation | In progress; G1 complete | D-019, D-026, D-027, D-028, and D-029 define the deterministic vertical slice, expandable versioned-template foundation, and controlled G2 publication contract; migration V8 and the template persistence model are implemented. | Start G2 — Template API. |
 | Phase 6 — Minimum Security | Not started | User, authentication, and backend authorization remain unimplemented. | Complete before a customer-data deployment. |
 | Phase 7 — Cloud Deployment | Not started | Hosting and production architecture are not selected. | Begin after CI and minimum security decisions. |
 | Phase 8 — Reliability and Performance | Not started | No operational baseline exists. | Begin after a staging deployment is reproducible. |
@@ -247,16 +247,16 @@ but combining ticket boundaries requires a separate scope review.
 | Ticket | Outcome | Verification | Suggested commit summary |
 | --- | --- | --- | --- |
 | G1 — Template persistence (complete) | Persist template identity, immutable DOCX versions, and structured scalar field definitions. | Flyway and repository integration tests against MySQL. | `feat: persist versioned document templates` |
-| G2 — Template API | Upload and publish `CUSTOM` DOCX templates using controlled ASCII placeholder keys; allow an empty field contract; publish later immutable versions; provide paginated listing, version-number retrieval, and exact-content download. | API tests for empty and populated publication, placeholder/field mismatches, validation failures, missing resources, pagination, scoped version lookup, and immutable-version behavior. | `feat: add document template API` |
+| G2 — Template API | Inspect `CUSTOM` DOCX templates containing controlled Chinese onboarding markers, canonical ASCII placeholders, or both; let users group detected markers and confirm canonical keys and field metadata; normalize and publish after one human confirmation; allow an empty contract and later immutable versions; provide paginated template/version listing, version-number retrieval, and exact published-content download. | Synthetic DOCX tests for empty/populated inspection, Chinese and canonical marker grammar, mixed input, canonical self-mapping, repeated and many-to-one grouping, split runs and tables, known unsupported locations, normalization and authoritative rescan, exact source/type validation, package safety, compensation, concurrent version allocation, missing resources, pagination, scoped lookup, and immutable-version behavior. | `feat: add document template API` |
 | G3 — DOCX renderer | Replace resolved scalar field values while preserving supported basic formatting. | Renderer fixture tests for replacement, missing values, unsupported constructs, and unchanged formatting. | `feat: render docx templates` |
 | G4 — Draft generation | Coordinate Case, system, and user-input values, rendering, storage, metadata, compensation, generation records, and stable relational Generation Value records that future provenance can reference. | Service and API tests for success, source resolution and override behavior, validation, retained value traceability, storage failure, and persistence cleanup. | `feat: generate document drafts` |
 | G5 — Human finalization | Download drafts and explicitly finalize reviewed generation records without automatic approval. | Tests for draft retrieval, valid finalization, repeated finalization, and stale or missing records. | `feat: finalize generated documents` |
 | G6 — Frontend integration | Replace only the relevant template and generation mock flow with draft generation and explicit finalization. | Frontend tests and manual template-selection, input, generation, download, error, and finalization checks. | `feat: integrate document generation` |
 
-Before G3, run a focused renderer-selection spike comparing Apache POI and
-docx4j against representative DOCX fixtures. Verify placeholders split across
-formatting runs and tables, formatting preservation, and unsupported constructs
-before accepting either dependency.
+The focused DOCX spike selected docx4j for the controlled scanner/normalizer and
+future renderer, isolated behind application-owned contracts. G3 must still
+verify rendered Chinese DOCX visual fidelity and formatting preservation using
+safe representative fixtures before its renderer is accepted.
 
 Deferred generation work includes reviewed-document replacement, DOCX-to-PDF
 conversion, advanced template syntax, image uploads, OCR, and AI-assisted
@@ -264,11 +264,14 @@ extraction.
 
 Later tickets have explicit decision gates:
 
-- before G2, finalize the controlled ASCII-placeholder grammar, localized
-  display-label contract, approved Case/system source keys, and structured
-  publication errors;
-- before G3, select the rendering library and supported DOCX constructs through
-  the representative-fixture spike;
+- G2 has finalized DOCX-only Chinese onboarding and canonical-placeholder
+  inspection, mixed-input and human-reviewed many-to-one grouping, canonical
+  field-key grammar, localized display names, exact Case/system source/type
+  compatibility, finite location validation, and single-confirmation
+  normalization/publication;
+- before G3 is accepted, verify docx4j rendering, supported DOCX constructs,
+  Chinese visual fidelity, and formatting preservation through representative
+  safe fixtures;
 - before G4, decide the generation-record identity, relationships, and retained
   values; Generation Values require stable relational identities, but unused
   evidence/OCR/AI columns remain prohibited;
