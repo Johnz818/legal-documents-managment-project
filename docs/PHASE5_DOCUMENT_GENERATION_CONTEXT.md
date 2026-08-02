@@ -16,10 +16,10 @@ starting context for later phases. Retain it only as historical delivery
 context unless the repository's documentation-retention policy later removes
 it.
 
-G1 — Template persistence is implemented and committed locally as `72a1c65`.
-The next planned ticket is **G2 — Template API**. Template publication,
-rendering, generation, finalization, and their frontend journey are not yet
-implemented.
+G1 — Template persistence and G2 — Template API are implemented. The next
+planned ticket is **G3 — DOCX renderer**, beginning with the accepted
+representative-fixture verification gate. Rendering, generation, finalization,
+and their frontend journey are not yet implemented.
 
 The guiding delivery rule is:
 
@@ -520,6 +520,16 @@ This layered approach may later give AI extraction stable targets without forcin
   field definitions.
 - MySQL-verified uniqueness, restrictive foreign keys, scalar/source enums,
   storage metadata, and lowercase SHA-256 persistence constraints from D-027.
+- controlled DOCX inspection for Chinese onboarding and canonical ASCII
+  markers, including split runs, supported tables, package preflight, and
+  finite unsupported-location validation;
+- human-confirmed many-to-one mapping validation, canonical normalization,
+  authoritative rescan, SHA-256 hashing, binary storage, and immutable
+  `CUSTOM` template publication;
+- short pessimistic template-row locking for concurrent later-version number
+  allocation, with binary compensation when metadata publication fails;
+- bounded template/version listing, template-local version retrieval, and exact
+  published-content download without exposing storage keys or entities.
 
 ### 4.2 Present only as frontend mocks
 

@@ -23,9 +23,12 @@ public class TemplateInspectionService {
     }
 
     public TemplateInspection inspect(MultipartFile file) {
-        validateFileMetadata(file);
+        if (file == null) {
+            validateFileMetadata(null, 0, true);
+        }
+        validateFileMetadata(file.getOriginalFilename(), file.getSize(), file.isEmpty());
         try {
-            return inspector.inspect(file.getBytes());
+            return inspect(file.getOriginalFilename(), file.getBytes());
         } catch (IOException exception) {
             throw new TemplateInspectionException(
                     TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSUPPORTED,
@@ -36,22 +39,26 @@ public class TemplateInspectionService {
         }
     }
 
-    private void validateFileMetadata(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
+    public TemplateInspection inspect(String fileName, byte[] content) {
+        validateFileMetadata(fileName, content == null ? 0 : content.length, content == null || content.length == 0);
+        return inspector.inspect(content);
+    }
+
+    private void validateFileMetadata(String fileName, long size, boolean empty) {
+        if (empty) {
             throw new TemplateInspectionException(
                     TemplateInspectionErrorCode.TEMPLATE_FILE_EMPTY,
                     HttpStatus.BAD_REQUEST,
                     "Template file must not be empty"
             );
         }
-        if (file.getSize() > limits.maximumFileSize()) {
+        if (size > limits.maximumFileSize()) {
             throw new TemplateInspectionException(
                     TemplateInspectionErrorCode.TEMPLATE_FILE_TOO_LARGE,
                     HttpStatus.PAYLOAD_TOO_LARGE,
                     "Template file exceeds the configured size limit"
             );
         }
-        String fileName = file.getOriginalFilename();
         if (fileName == null
                 || fileName.isBlank()
                 || fileName.length() > 255

@@ -2,6 +2,7 @@ package com.example.legal.document.template.api;
 
 import com.example.legal.document.template.inspection.TemplateInspectionErrorCode;
 import com.example.legal.document.template.inspection.TemplateInspectionException;
+import com.example.legal.document.template.publication.TemplatePublicationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -10,7 +11,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
-@RestControllerAdvice(assignableTypes = TemplateInspectionController.class)
+@RestControllerAdvice(assignableTypes = {
+        TemplateInspectionController.class,
+        TemplatePublicationController.class
+})
 public class TemplateApiExceptionHandler {
 
     @ExceptionHandler(TemplateInspectionException.class)
@@ -20,6 +24,20 @@ public class TemplateApiExceptionHandler {
                 exception.getMessage()
         );
         problem.setTitle("Invalid document template");
+        problem.setProperty("code", exception.getCode().name());
+        if (!exception.getDetails().isEmpty()) {
+            problem.setProperty("details", exception.getDetails());
+        }
+        return problem;
+    }
+
+    @ExceptionHandler(TemplatePublicationException.class)
+    ProblemDetail handlePublicationFailure(TemplatePublicationException exception) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                exception.getStatus(),
+                exception.getMessage()
+        );
+        problem.setTitle("Document template publication failed");
         problem.setProperty("code", exception.getCode().name());
         if (!exception.getDetails().isEmpty()) {
             problem.setProperty("details", exception.getDetails());

@@ -620,10 +620,12 @@ Case List displays live scalar case information and supports API-backed filterin
 Case Detail displays and updates live scalar case information. Updates use optimistic locking so an older edit cannot silently overwrite a newer change. Users can archive and restore cases, and archived cases are discoverable through the Case List archive-state selector. Its Case file section lists, uploads, and downloads live PDF and Word files. Reminders remain mock-backed, and supporting members are shown as not yet available. Tags and supporting members are not synthesized from legacy case mocks.
 
 The backend now persists stable Document Template identities, immutable version
-metadata, and version-owned field definitions. Template publication APIs,
-binary template storage, rendering, generation, and preview/editing are not yet
-implemented, so the related frontend journeys continue to use legacy mock
-models. Generated mock documents are not presented as persisted Case files.
+metadata, and version-owned field definitions. It can inspect controlled DOCX
+markers, normalize human-confirmed mappings, publish immutable `CUSTOM`
+template versions, list templates and versions, and download exact published
+content. Rendering, generation, and preview/editing are not yet implemented, so
+the related frontend journeys continue to use legacy mock models. Generated
+mock documents are not presented as persisted Case files.
 
 The manual Case creation page submits the approved scalar model to the backend Case creation API. Lead lawyers still come from the temporary frontend user dataset and are persisted as name snapshots until the User domain is implemented.
 
@@ -643,6 +645,8 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 - Upload, list, download, and remove files for an existing case.
 - Persist stable template identities, immutable version metadata, and
   version-owned structured field definitions.
+- Inspect, normalize, publish, list, retrieve, and download controlled DOCX
+  template versions through the backend API.
 
 ### Planned user journeys
 
