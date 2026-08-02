@@ -1,0 +1,11 @@
+package com.example.legal.document.template.inspection;
+
+public enum TemplateInspectionErrorCode {
+    TEMPLATE_FILE_EMPTY,
+    TEMPLATE_FILE_TOO_LARGE,
+    TEMPLATE_FILE_NOT_DOCX,
+    TEMPLATE_PACKAGE_UNSAFE,
+    TEMPLATE_PACKAGE_UNSUPPORTED,
+    TEMPLATE_MARKER_INVALID,
+    TEMPLATE_MARKER_UNSUPPORTED_LOCATION
+}

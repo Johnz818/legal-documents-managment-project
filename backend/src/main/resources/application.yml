@@ -27,3 +27,10 @@ legal:
         root: ${LEGAL_DOCUMENT_STORAGE_ROOT:./.local-data/documents}
     upload:
       max-file-size: ${LEGAL_DOCUMENT_MAX_FILE_SIZE:5MB}
+    template:
+      max-file-size: ${LEGAL_TEMPLATE_MAX_FILE_SIZE:5MB}
+      max-entry-count: ${LEGAL_TEMPLATE_MAX_ENTRY_COUNT:2048}
+      max-entry-size: ${LEGAL_TEMPLATE_MAX_ENTRY_SIZE:10MB}
+      max-expanded-size: ${LEGAL_TEMPLATE_MAX_EXPANDED_SIZE:50MB}
+      max-compression-ratio: ${LEGAL_TEMPLATE_MAX_COMPRESSION_RATIO:100}
+      compression-ratio-min-expanded-size: ${LEGAL_TEMPLATE_COMPRESSION_RATIO_MIN_SIZE:1MB}
