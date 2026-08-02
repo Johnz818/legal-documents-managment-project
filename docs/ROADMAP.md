@@ -18,7 +18,9 @@ Completed:
 
 Current engineering gaps:
 
-- Document templates, generation, and reminders remain mock-backed.
+- Template persistence is implemented, while template publication, rendering,
+  generation, finalization, and the related frontend journey remain incomplete.
+- Reminder workflows remain mock-backed.
 - Backend allowed origins are not environment-driven.
 - Image publishing, deployment, authentication, and operational monitoring are
   not implemented.
@@ -30,8 +32,8 @@ Current engineering gaps:
 | Phase 1 — Engineering Baseline | Complete for the approved local-development scope | E1–E4 are committed; frontend checks/tests/build pass and the backend enforces its 90% line-coverage gate. E5 was deliberately reassigned to deployment configuration. | Begin Case document management. |
 | Phase 2 — Case Document Management | Complete for the approved local file-management scope | D1–D8 provide metadata persistence, local storage, validated upload, list/download/removal APIs, and the live Case Detail file journey. | Begin Phase 3 containerization. |
 | Phase 3 — Containerization | Complete for the approved local-development scope | C1 and C2 provide non-root backend and frontend images; C3 connects them to isolated MySQL 9.7.1 with persistent database and document volumes. | Begin CI1, the application verification workflow. |
-| Phase 4 — Continuous Integration | Complete for verification scope; publishing deferred | CI1 and CI2 are complete: application verification and both application-owned image builds pass on GitHub. CI3 remains tracked but depends on an approved deployment architecture. | Begin G1 template persistence; resume CI3 after P1 selects the deployment platform and registry. |
-| Phase 5 — Minimal Document Generation | Planned | D-019 and D-026 define the deliberately limited generation boundary and versioned template model. | Start G1 — Template persistence. |
+| Phase 4 — Continuous Integration | Complete for verification scope; publishing deferred | CI1 and CI2 are complete: application verification and both application-owned image builds pass on GitHub. CI3 remains tracked but depends on an approved deployment architecture. | Continue G2; resume CI3 after P1 selects the deployment platform and registry. |
+| Phase 5 — Minimal Document Generation | In progress; G1 complete | D-019, D-026, D-027, and D-028 define the deterministic vertical slice and expandable versioned-template foundation; migration V8 and the template persistence model are implemented. | Start G2 — Template API. |
 | Phase 6 — Minimum Security | Not started | User, authentication, and backend authorization remain unimplemented. | Complete before a customer-data deployment. |
 | Phase 7 — Cloud Deployment | Not started | Hosting and production architecture are not selected. | Begin after CI and minimum security decisions. |
 | Phase 8 — Reliability and Performance | Not started | No operational baseline exists. | Begin after a staging deployment is reproducible. |
@@ -89,6 +91,19 @@ publishing is implemented, approve:
 
 ### Phase 5 — Minimal Document Generation
 
+Phase 5 is a production-shaped vertical slice and an expandable foundation,
+not the complete authoring and evidence-assisted product. It completes one
+demonstrable journey before minimum security and cloud deployment:
+
+```text
+controlled template publication
+  -> Case/system/manual value review
+  -> deterministic DOCX generation
+  -> generated-draft download
+  -> explicit human finalization
+  -> Case document traceability
+```
+
 - Persist reusable templates with immutable DOCX versions.
 - Define structured scalar template fields.
 - Detect controlled placeholders and require field definitions to match before
@@ -100,6 +115,46 @@ publishing is implemented, approve:
 The deterministic milestone is intentionally useful without AI. Evidence
 extraction begins only after templates, field contracts, rendering, generation
 traceability, and human finalization work end to end.
+
+This delivery boundary is not the final product ceiling. Future browser
+authoring adds mutable drafts and suggestions upstream of the existing
+publication model. Future evidence assistance adds reviewed candidates and
+provenance upstream of the existing Generation Value and renderer boundary.
+Neither future capability should replace immutable published versions or
+deterministic rendering.
+
+The eventual product workflow expands the same vertical slice:
+
+```text
+Word upload or blank browser draft
+  -> browser boilerplate and placeholder editing
+  -> reviewed suggestions
+  -> explicit immutable publication
+  -> Case and exact-version selection
+  -> Case/system/manual/evidence value candidates
+  -> human value and provenance review
+  -> deterministic DOCX generation
+  -> browser review of the Case-specific draft
+  -> explicit finalization
+```
+
+Model expansion is additive:
+
+```text
+Future TemplateDraft/TemplateSuggestion
+                 |
+                 v
+Existing DocumentTemplate/Version/Field
+                 |
+                 v
+Phase 5 DocumentGeneration/GenerationValue
+                 ^
+                 |
+Future EvidenceCandidate and provenance
+                 |
+                 v
+Existing renderer and CaseDocument storage boundary
+```
 
 ### Phase 6 — Minimum Security
 
@@ -191,10 +246,10 @@ but combining ticket boundaries requires a separate scope review.
 
 | Ticket | Outcome | Verification | Suggested commit summary |
 | --- | --- | --- | --- |
-| G1 — Template persistence | Persist template identity, immutable DOCX versions, and structured scalar field definitions. | Flyway and repository integration tests against MySQL. | `feat: persist versioned document templates` |
-| G2 — Template API | Upload, list, and retrieve DOCX templates; detect controlled placeholders and require matching field definitions before immutable publication. | API tests for valid publication, placeholder/field mismatches, validation failures, missing resources, and immutable-version behavior. | `feat: add document template API` |
+| G1 — Template persistence (complete) | Persist template identity, immutable DOCX versions, and structured scalar field definitions. | Flyway and repository integration tests against MySQL. | `feat: persist versioned document templates` |
+| G2 — Template API | Upload and publish `CUSTOM` DOCX templates using controlled ASCII placeholder keys; allow an empty field contract; publish later immutable versions; provide paginated listing, version-number retrieval, and exact-content download. | API tests for empty and populated publication, placeholder/field mismatches, validation failures, missing resources, pagination, scoped version lookup, and immutable-version behavior. | `feat: add document template API` |
 | G3 — DOCX renderer | Replace resolved scalar field values while preserving supported basic formatting. | Renderer fixture tests for replacement, missing values, unsupported constructs, and unchanged formatting. | `feat: render docx templates` |
-| G4 — Draft generation | Coordinate Case values, user input, rendering, storage, metadata, compensation, and generation records. | Service and API tests for success, validation, storage failure, and persistence cleanup. | `feat: generate document drafts` |
+| G4 — Draft generation | Coordinate Case, system, and user-input values, rendering, storage, metadata, compensation, generation records, and stable relational Generation Value records that future provenance can reference. | Service and API tests for success, source resolution and override behavior, validation, retained value traceability, storage failure, and persistence cleanup. | `feat: generate document drafts` |
 | G5 — Human finalization | Download drafts and explicitly finalize reviewed generation records without automatic approval. | Tests for draft retrieval, valid finalization, repeated finalization, and stale or missing records. | `feat: finalize generated documents` |
 | G6 — Frontend integration | Replace only the relevant template and generation mock flow with draft generation and explicit finalization. | Frontend tests and manual template-selection, input, generation, download, error, and finalization checks. | `feat: integrate document generation` |
 
@@ -209,22 +264,86 @@ extraction.
 
 Later tickets have explicit decision gates:
 
-- before G2, confirm the controlled-placeholder grammar and publication error
-  behavior;
+- before G2, finalize the controlled ASCII-placeholder grammar, localized
+  display-label contract, approved Case/system source keys, and structured
+  publication errors;
 - before G3, select the rendering library and supported DOCX constructs through
   the representative-fixture spike;
 - before G4, decide the generation-record identity, relationships, and retained
-  values;
+  values; Generation Values require stable relational identities, but unused
+  evidence/OCR/AI columns remain prohibited;
 - before G5, decide finalization meaning, reversibility, finalized-output
   immutability, and correction behavior;
 - before G6, define the human review experience without introducing the
   deferred browser-based Word editor or reviewed-document replacement flow.
 
-### Future Evidence-Assisted Generation (deferred)
+### Phase 6 — Minimum Security
+
+| Ticket | Outcome | Verification | Suggested commit summary |
+| --- | --- | --- | --- |
+| S1 — User and role domain | Persist active users, secure password hashes, and a minimal role model; finalize lawyer relationships. | Flyway, repository, and domain tests against MySQL. | `feat: add user and role domain` |
+| S2 — Authentication | Authenticate users using the approved session or token design. | Successful, invalid, disabled-user, and expiry integration tests. | `feat: add user authentication` |
+| S3 — Backend authorization | Protect Case mutations and document operations with backend-enforced permissions. | Allowed, unauthenticated, and forbidden API tests. | `feat: authorize case operations` |
+| S4 — Frontend authentication | Add login, session handling, protected navigation, and unauthorized-state handling. | Frontend tests and authenticated browser journey. | `feat: integrate frontend authentication` |
+
+### Phase 7 — Cloud Deployment
+
+| Ticket | Outcome | Verification | Suggested commit summary |
+| --- | --- | --- | --- |
+| P1 — Deployment architecture | Select and document hosting, container registry, database, storage, domains, TLS, secret management, and expected cost; unblock CI3. | Architecture and security review. | `docs: define cloud deployment architecture` |
+| P2 — Production configuration | Add production-safe runtime profiles and secret injection without committed credentials. | Staging configuration validation and startup. | `chore: add production configuration` |
+| P3 — Staging deployment | Deploy the complete system with synthetic data to the selected staging environment. | End-to-end smoke test and migration verification. | `ops: deploy staging environment` |
+| P4 — Release workflow | Document and automate controlled deployment, migration, rollback, and recovery. | Deployment and rollback rehearsal. | `ci: add production release workflow` |
+
+### Phase 8 — Reliability and Performance
+
+| Ticket | Outcome | Verification | Suggested commit summary |
+| --- | --- | --- | --- |
+| O1 — Health and observability | Add readiness, health, structured logging, and application metrics. | Failure/recovery checks and metric inspection. | `ops: add application observability` |
+| O2 — Backup and recovery | Define and rehearse MySQL and document-storage backup and restoration. | Recorded restore rehearsal using non-production data. | `ops: document backup and recovery` |
+| O3 — Performance baseline | Add k6 scenarios for Case list, search, and document upload using realistic synthetic volume. | Reproducible baseline report with stated thresholds. | `test: add performance baseline` |
+| O4 — Evidence-based optimization | Apply measured database or storage improvements without speculative indexes. | Before-and-after query and load-test measurements. | `perf: optimize measured bottlenecks` |
+| O5 — Operational hardening | Add justified limits, timeouts, error monitoring, dependency maintenance, and incident guidance. | Failure-mode tests and operational review. | `ops: harden production operations` |
+
+### Post-deployment Product Expansion (not yet sequenced)
+
+The following product capabilities are intentionally listed after minimum
+security, cloud deployment, and reliability work. Their internal ordering is
+not yet accepted and must be reviewed against product priority, security,
+privacy, deployment cost, and representative-material evidence.
+
+#### Browser Template Authoring
+
+The final authoring product is confirmed, but it does not expand G2–G6. A user
+will upload a Word document or create a blank draft, edit boilerplate and
+placeholders in a browser, review suggestions derived from visual conventions,
+and explicitly publish through the existing immutable publication boundary.
+
+Begin this work with a time-boxed editor integration and licensing spike using
+safe representative Chinese Word fixtures. Compare at least the leading
+self-hosted candidates for legacy-DOC conversion, DOCX fidelity, tagged content
+controls, save callbacks, custom side-panel integration, security, licensing,
+and operational cost. Draft, editor-session, and suggestion schemas must follow
+the spike rather than precede it.
+
+Expected additive concepts are mutable `TemplateDraft` and advisory
+`TemplateSuggestion` records. Autosaves do not create versions. Updating a
+published reusable template forks a draft; explicit publication creates the
+next immutable version. Imported brackets, blanks, `XXXX`, underlining, color,
+and prose annotations are suggestions only. Direct Phase 5 DOCX publication
+may remain available as an expert workflow.
+
+#### Evidence-Assisted Generation
 
 These capabilities remain tracked so the final business goal is not lost, but
-they do not expand G1-G6. Their delivery order must be reviewed against
-security, privacy, deployment, and representative-material evidence.
+they do not expand G1–G6.
+
+Evidence assistance extends value acquisition rather than template definition
+or rendering. A file uploaded during generation should normally become a Case
+Document. Extraction creates candidate values with source-document/page
+provenance; a human accepts, edits, or rejects them; only the approved final
+Generation Value reaches the deterministic renderer. Conflicting sources are
+shown rather than resolved through hidden precedence.
 
 | Milestone | Outcome | Required investigation and verification |
 | --- | --- | --- |
@@ -255,34 +374,6 @@ Future decision gates and TODOs:
 - measure OCR/AI cost and latency before selecting providers or production
   limits.
 
-### Phase 6 — Minimum Security
-
-| Ticket | Outcome | Verification | Suggested commit summary |
-| --- | --- | --- | --- |
-| S1 — User and role domain | Persist active users, secure password hashes, and a minimal role model; finalize lawyer relationships. | Flyway, repository, and domain tests against MySQL. | `feat: add user and role domain` |
-| S2 — Authentication | Authenticate users using the approved session or token design. | Successful, invalid, disabled-user, and expiry integration tests. | `feat: add user authentication` |
-| S3 — Backend authorization | Protect Case mutations and document operations with backend-enforced permissions. | Allowed, unauthenticated, and forbidden API tests. | `feat: authorize case operations` |
-| S4 — Frontend authentication | Add login, session handling, protected navigation, and unauthorized-state handling. | Frontend tests and authenticated browser journey. | `feat: integrate frontend authentication` |
-
-### Phase 7 — Cloud Deployment
-
-| Ticket | Outcome | Verification | Suggested commit summary |
-| --- | --- | --- | --- |
-| P1 — Deployment architecture | Select and document hosting, container registry, database, storage, domains, TLS, secret management, and expected cost; unblock CI3. | Architecture and security review. | `docs: define cloud deployment architecture` |
-| P2 — Production configuration | Add production-safe runtime profiles and secret injection without committed credentials. | Staging configuration validation and startup. | `chore: add production configuration` |
-| P3 — Staging deployment | Deploy the complete system with synthetic data to the selected staging environment. | End-to-end smoke test and migration verification. | `ops: deploy staging environment` |
-| P4 — Release workflow | Document and automate controlled deployment, migration, rollback, and recovery. | Deployment and rollback rehearsal. | `ci: add production release workflow` |
-
-### Phase 8 — Reliability and Performance
-
-| Ticket | Outcome | Verification | Suggested commit summary |
-| --- | --- | --- | --- |
-| O1 — Health and observability | Add readiness, health, structured logging, and application metrics. | Failure/recovery checks and metric inspection. | `ops: add application observability` |
-| O2 — Backup and recovery | Define and rehearse MySQL and document-storage backup and restoration. | Recorded restore rehearsal using non-production data. | `ops: document backup and recovery` |
-| O3 — Performance baseline | Add k6 scenarios for Case list, search, and document upload using realistic synthetic volume. | Reproducible baseline report with stated thresholds. | `test: add performance baseline` |
-| O4 — Evidence-based optimization | Apply measured database or storage improvements without speculative indexes. | Before-and-after query and load-test measurements. | `perf: optimize measured bottlenecks` |
-| O5 — Operational hardening | Add justified limits, timeouts, error monitoring, dependency maintenance, and incident guidance. | Failure-mode tests and operational review. | `ops: harden production operations` |
-
 ## Ticket Rules
 
 Every ticket must:
@@ -294,3 +385,9 @@ Every ticket must:
 5. Update product or decision documentation when behavior or architecture
    changes.
 6. Wait for approval before implementation.
+
+Phase handoff documents are temporary delivery aids, not durable architecture
+authorities. Before a phase is completed, migrate every lasting product goal,
+domain rule, accepted decision, and roadmap item into `PRODUCT.md`,
+`DOCUMENT_DOMAIN.md`, `DECISIONS.md`, or `ROADMAP.md`. Then mark the handoff
+deprecated and do not use it as the starting context for later phases.

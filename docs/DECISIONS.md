@@ -338,7 +338,7 @@ browser editing, PDF conversion, OCR, or AI processing.
 
 ### D-019
 
-Status: Accepted
+Status: Accepted; delivery scope clarified by D-028
 
 The initial template-generation model uses one DOCX source file per immutable
 template version. A template has one intended generated format in this phase:
@@ -560,7 +560,7 @@ required provenance, SBOM, or signing controls.
 
 ### D-026
 
-Status: Accepted
+Status: Accepted; final-product direction clarified by D-028
 
 The Document Template aggregate uses a stable `DocumentTemplate` identity with
 immutable published `DocumentTemplateVersion` records. Each published version
@@ -676,6 +676,133 @@ repositories expose only the persistence and lookup operations needed by the
 publication foundation rather than general deletion operations. G1 does not
 add template deletion, archival, creator snapshots, seed data, binary upload,
 placeholder parsing, or generation behavior.
+
+---
+
+## 2026-08-02
+
+### D-028
+
+Status: Accepted
+
+Phase 5 is a production-shaped vertical slice and an expandable foundation,
+not the complete authoring and evidence-assisted product. The project will
+complete, secure, and deploy a deterministic document-generation journey before
+implementing the final browser-authoring and evidence-extraction experience.
+Expandability comes from stable domain boundaries, immutable history, narrow
+technology interfaces, and relational identities that future records can
+reference—not from speculative tables or unused abstractions.
+
+The final template-authoring target lets a user upload a Word document or create
+a blank draft, edit boilerplate and placeholders in a browser, review suggested
+variable regions, and explicitly publish an immutable version. Imported
+brackets, `XXXX`, blanks, underlining, color, and prose annotations are advisory
+signals rather than runtime contracts. Template drafts and autosaves remain
+mutable and do not create versions. Editing a published reusable template begins
+a new draft; only explicit publication creates the next immutable Template
+Version.
+
+The current Phase 5 vertical slice does not implement that browser editor,
+legacy-DOC normalization, draft persistence, or suggestion workflow. It accepts
+controlled DOCX content using ASCII machine-oriented placeholder keys with
+localized display labels. It allows an empty placeholder set and empty field
+contract, creates only `CUSTOM` templates through the public creation API, lists
+templates through a bounded paginated contract, and addresses nested versions
+by their template-local version number. `PRESET` authoring remains unavailable
+until administrator identity and authorization exist.
+
+The relational Template Field contract is independent of the eventual Word
+marker representation. Future browser authoring may use tagged content controls
+or another deterministic structured marker while existing textual-placeholder
+versions remain renderable. Do not add a marker-strategy discriminator until a
+second real representation is introduced and verified.
+
+Generation acquires approved values from four conceptual channels:
+
+- structured Case values;
+- narrowly defined system values;
+- explicit user input or correction for one generation;
+- future evidence-derived suggestions from Case Documents.
+
+The first three channels form the deterministic Phase 5 implementation.
+Evidence-derived values are advisory candidates, not reusable Template Field
+provenance and not automatically approved legal facts. When sources disagree,
+the application must present alternatives rather than apply hidden precedence.
+A file uploaded during generation should normally become a Case Document so
+future evidence records can retain a stable source-document and page reference.
+
+Generation Values must be persisted separately from reusable field definitions
+and have stable relational identities. This lets future candidate, provenance,
+confidence, and review records attach additively. Phase 5 must not add unused
+OCR, AI, editor-session, or evidence columns before those capabilities are
+designed. The deterministic renderer consumes only final reviewed values and
+remains isolated from Case loading, persistence, storage providers, browser
+editors, OCR, and AI.
+
+The delivery order is:
+
+1. finish Phase 5 controlled publication, Case/system/manual value resolution,
+   deterministic DOCX generation, human finalization, and frontend integration;
+2. implement minimum security and actor-based authorization;
+3. complete cloud deployment, object storage, CI publishing, and the required
+   reliability and operational baseline;
+4. add browser template authoring and evidence-assisted generation as separately
+   scoped, additive product phases.
+
+The accepted Phase 5 workflow is:
+
+```text
+controlled CUSTOM DOCX publication
+  -> immutable Template Version and field contract
+  -> Case and version selection
+  -> Case/system defaults plus reviewed user input
+  -> persisted Generation Values
+  -> deterministic DOCX rendering
+  -> generated Case Document and generation traceability
+  -> human review and explicit finalization
+```
+
+The accepted eventual product workflow is:
+
+```text
+upload Word or create blank TemplateDraft
+  -> browser edit and placeholder suggestions
+  -> human-approved immutable publication
+  -> select Case and exact version
+  -> Case/system/manual/evidence value candidates
+  -> conflict and provenance review
+  -> approved Generation Values
+  -> same deterministic rendering boundary
+  -> browser review of Case-specific output
+  -> explicit finalization
+```
+
+The expansion model is:
+
+```text
+TemplateDraft + TemplateSuggestion
+                |
+                | explicit publication
+                v
+DocumentTemplate -> DocumentTemplateVersion -> DocumentTemplateField
+                                                   |
+Case ----------------------------------------------+--> DocumentGeneration
+System/User input ---------------------------------+         |
+Future EvidenceCandidate -- human approval --------+         v
+                                                       GenerationValue
+                                                            |
+                                                            v
+                                                   deterministic renderer
+                                                            |
+                                                            v
+                                                   generated CaseDocument
+```
+
+This decision does not reverse D-019, D-026, or D-027. It clarifies that their
+minimal mechanisms are the current delivery boundary rather than the final
+product experience. G1's stable Template identity, immutable versions,
+version-owned fields, storage metadata, and SHA-256 traceability remain the
+accepted foundation.
 
 ---
 

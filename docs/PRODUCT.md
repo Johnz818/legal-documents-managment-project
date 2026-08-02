@@ -65,16 +65,54 @@ Example:
 Users can:
 
 - Manage preset and custom document templates.
-- Define template fields represented by controlled placeholders.
+- Upload an existing Word document or eventually create a template from
+  scratch in a browser-based editor.
+- Review and adjust reusable boilerplate and suggested variable regions before
+  publishing a template.
+- Define template fields represented by deterministic placeholders.
 - Select a case and template.
-- Generate a document using case and lawyer data.
+- Review values acquired from Case data, defined system values, explicit user
+  input, and eventually information extracted from Case documents.
+- Generate a document using only reviewed values.
 - Review generation inputs and the generated draft, then explicitly finalize
   the reviewed result.
 
 Example:
 
-The controlled placeholder `{{案号}}` represents a template field and is
-replaced with `(2026)沪0115民初1001号`; `{{主办律师}}` is replaced with `李律师`.
+In the Phase 5 delivery, the controlled ASCII placeholder `{{case_number}}`
+represents the field displayed to the user as `案号` and is replaced with
+`(2026)沪0115民初1001号`; `{{lead_lawyer_name}}` is displayed as `主办律师` and
+is replaced with `李律师`.
+
+#### Final template-authoring target
+
+The intended product is a browser-based legal-template authoring and versioning
+system:
+
+```text
+Upload Word document or create a blank draft
+  -> system suggests possible boilerplate and variable regions
+  -> user edits paragraphs, formatting, and placeholders in the browser
+  -> user accepts, rejects, or adjusts suggestions
+  -> explicit publication creates an immutable template version
+  -> later reusable-template edits begin in a new draft
+  -> later publication creates the next immutable version
+```
+
+Imported templates may express possible variables through `XXXX`, blank lines,
+brackets, underlining, color, annotations, or existing controlled markers.
+Those signals are suggestions during authoring, not a reliable runtime
+contract. A published version must contain a deterministic, human-approved
+field contract. Draft autosaves do not create published versions.
+
+Editing one Case-specific generated document is different from editing a
+reusable template: it changes only that generated work product and never
+creates a new reusable-template version.
+
+The browser editor, legacy-DOC normalization, suggestion workflow, and
+structured placeholder representation require a dedicated editor integration
+and licensing spike. They are part of the final product direction but are not
+implemented by the current Phase 5 milestone.
 
 #### Evidence-assisted generation target
 
@@ -105,16 +143,155 @@ capabilities:
 - Field-value acquisition supplies resolved Case values, explicit
   user input, or future evidence-extraction suggestions.
 
+The complete target value-acquisition model is:
+
+- **Case values:** approved structured facts already stored on the selected
+  Case, such as its case number or court.
+- **System values:** narrowly defined deterministic values such as the current
+  date.
+- **Explicit user input:** a typed value or a user correction for this one
+  generation.
+- **Evidence suggestions:** candidate values extracted from Word documents,
+  text PDFs, scanned PDFs, or approved images associated with the Case.
+
+Evidence suggestions do not outrank Case data or manual input automatically.
+When sources disagree, the application presents the alternatives and their
+provenance so a human can choose or correct the value. A file uploaded during
+generation should normally become a Case Document so the resulting suggestion
+can retain a stable source-document and page reference.
+
 The application supports system-provided and user-created reusable templates.
 When document-specific editing is introduced, editing a generated document for
 one Case will change that document only; it will not modify the reusable
 template or publish a new template version.
 
-The initial product milestone requires Case-backed defaults, manual input,
-deterministic DOCX generation, and human finalization. OCR and AI-assisted
-extraction are future assistance capabilities, not prerequisites for the first
-usable generation workflow. AI output is never treated as an approved legal
-fact without human review.
+Phase 5 is a production-shaped vertical slice and an expandable foundation,
+not the complete authoring and evidence-assisted product. It requires
+controlled DOCX publication, Case-backed and system defaults, manual input,
+deterministic DOCX generation, and human finalization. It deliberately reaches
+an end-to-end deployable workflow before browser authoring, OCR, or AI-assisted
+extraction is implemented.
+
+Future authoring feeds the existing publication boundary; future extraction
+feeds reviewed generation values. Neither capability should replace immutable
+Template Versions or deterministic rendering. AI output is never treated as
+an approved legal fact without human review.
+
+#### Current Phase 5 deterministic vertical-slice workflow
+
+The current milestone completes this production-shaped vertical slice:
+
+```text
+User prepares a DOCX with controlled ASCII placeholders
+        |
+        v
+Upload and validate CUSTOM template content and field definitions
+        |
+        v
+Explicitly publish immutable Template Version
+        |
+        v
+User selects Case and exact Template Version
+        |
+        v
+Application prefills Case and system values
+        |
+        v
+User reviews defaults and enters or corrects remaining values
+        |
+        v
+Application validates required Generation Values
+        |
+        v
+Deterministic renderer creates DOCX draft
+        |
+        v
+Store generated Case Document and generation traceability
+        |
+        v
+User downloads, reviews, and explicitly finalizes the result
+```
+
+Phase 5 does not create a template version for an editor autosave or for an
+edit made to one Case-specific generated document. It creates a version only
+through explicit publication of reusable template content.
+
+#### Eventual product workflow
+
+The final product expands both sides of the same immutable core:
+
+```text
+TEMPLATE AUTHORING
+
+Upload DOC/DOCX or create blank browser draft
+        |
+        v
+System suggests variable regions from markers, formatting, context, or AI
+        |
+        v
+User edits boilerplate and accepts, rejects, or creates placeholders
+        |
+        v
+Explicit publication
+        |
+        v
+Immutable Template Version + exact field contract
+
+CASE-SPECIFIC GENERATION
+
+Choose Case and exact Template Version
+        |
+        v
+Collect candidate values from Case, system, manual input, and Case evidence
+        |
+        v
+Show conflicts, confidence, and source-document/page provenance
+        |
+        v
+Human accepts, edits, or rejects each required value
+        |
+        v
+Deterministic rendering of approved values only
+        |
+        v
+Browser review/edit of the Case-specific generated draft
+        |
+        v
+Explicit finalization and retained traceability
+```
+
+#### Expandable product model
+
+```text
+TemplateSuggestion ───────────────────────> TemplateDraft
+[future infrastructure candidate]
+browser editor integration/session ──────> TemplateDraft
+                                                |
+                                                | publish
+                                        v
+                                       DocumentTemplate
+                                                |
+                                                v
+                                       DocumentTemplateVersion
+                                                |
+                                                +── owns ──> DocumentTemplateField
+                                                |
+                                                v
+Case ─────────────────────────────────> DocumentGeneration
+                                                |
+Case values ───────────────────────────┐         |
+System values ─────────────────────────┼────────> GenerationValue
+User input ────────────────────────────┤              |
+EvidenceCandidate ─ review/approve ────┘              v
+                                           deterministic renderer
+                                                       |
+                                                       v
+                                            Generated CaseDocument
+```
+
+The future models attach before publication or before final value approval.
+They do not mutate a published Template Version and do not bypass the
+deterministic renderer.
 
 ### Reminder and Notification Management
 
@@ -250,9 +427,10 @@ Key information:
 
 A template has a stable identity and one or more immutable published DOCX
 versions. Each published version owns the exact reusable DOCX content and field
-contract used for generation. A future template editor may maintain an
-unpublished working draft, but ordinary edits to a generated Case document do
-not create template versions.
+contract used for generation. The final product also has mutable, unpublished
+working drafts for browser authoring. Draft saves are not published versions;
+explicit reusable-template publication creates a version. Ordinary edits to a
+generated Case document do not create template versions.
 
 Template types:
 
@@ -270,14 +448,19 @@ state, deterministic default source, and display order. Future extracted values
 also carry provenance, confidence, and human-review state; those facts belong
 to the generation result rather than the template definition.
 
-Examples:
+Phase 5 marker examples use ASCII machine keys with localized display labels:
 
-- `{{案号}}`
-- `{{法院}}`
-- `{{原告}}`
-- `{{被告}}`
-- `{{主办律师}}`
-- `{{当前日期}}`
+- `{{case_number}}` — `案号`
+- `{{court_name}}` — `法院`
+- `{{plaintiff}}` — `原告`
+- `{{defendant}}` — `被告`
+- `{{lead_lawyer_name}}` — `主办律师`
+- `{{current_date}}` — `当前日期`
+
+The field contract is intentionally independent of the long-term Word marker
+technology. A future browser editor may publish tagged content controls while
+older textual-placeholder versions remain renderable through their supported
+strategy.
 
 ### Generated Document
 
@@ -410,8 +593,11 @@ Case List displays live scalar case information and supports API-backed filterin
 
 Case Detail displays and updates live scalar case information. Updates use optimistic locking so an older edit cannot silently overwrite a newer change. Users can archive and restore cases, and archived cases are discoverable through the Case List archive-state selector. Its Case file section lists, uploads, and downloads live PDF and Word files. Reminders remain mock-backed, and supporting members are shown as not yet available. Tags and supporting members are not synthesized from legacy case mocks.
 
-Document templates, generation, and preview/editing continue to use the legacy
-mock models. Generated mock documents are not presented as persisted Case files.
+The backend now persists stable Document Template identities, immutable version
+metadata, and version-owned field definitions. Template publication APIs,
+binary template storage, rendering, generation, and preview/editing are not yet
+implemented, so the related frontend journeys continue to use legacy mock
+models. Generated mock documents are not presented as persisted Case files.
 
 The manual Case creation page submits the approved scalar model to the backend Case creation API. Lead lawyers still come from the temporary frontend user dataset and are persisted as name snapshots until the User domain is implemented.
 
@@ -429,6 +615,8 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 - Edit and persist scalar case details.
 - Archive, discover, and restore cases.
 - Upload, list, download, and remove files for an existing case.
+- Persist stable template identities, immutable version metadata, and
+  version-owned structured field definitions.
 
 ### Planned user journeys
 
@@ -449,6 +637,8 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 
 - Case List bulk actions are not connected to backend capabilities.
 - Case tags and supporting members are not yet represented by backend relationship models or APIs.
-- Case-related reminders and document generation remain mock-backed.
+- Case-related reminders remain mock-backed; document-generation persistence is
+  limited to the completed template foundation and has not yet reached live
+  publication or generation APIs.
 - Authentication and authorization are not implemented.
 - Audit-log behavior is represented in navigation and permissions but is not implemented.
