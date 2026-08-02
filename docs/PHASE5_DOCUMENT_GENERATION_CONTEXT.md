@@ -61,7 +61,9 @@ The longer-term business target also uses information contained in uploaded Case
 Chinese example:
 
 ```text
-模板字段：{{case_number}}（显示名称：案号）
+上传标记：{{案号}} 或 {{案件编号}}
+用户确认：二者映射到 fieldKey `case_number`，显示名称为 `案号`
+发布模板：{{case_number}}
 案件数据：(2026)沪0115民初1001号
 生成结果：在 DOCX 中以案件案号替换 {{case_number}}
 ```
@@ -94,7 +96,8 @@ the application independently verifies the document's legal correctness.
 The accepted technical boundary supporting that user journey is:
 
 - one DOCX source file for each immutable published template version;
-- controlled ASCII machine-key placeholders in the DOCX, with localized
+- controlled Chinese onboarding markers, canonical ASCII placeholders, or both
+  in DOCX, followed by human grouping and field confirmation, with localized
   display labels and an allowed empty field contract;
 - structured scalar field definitions owned by the published version;
 - deterministic value acquisition and DOCX rendering;
@@ -148,10 +151,22 @@ The deferred evidence-assisted sequence is:
 Current Phase 5 deterministic vertical-slice workflow:
 
 ```text
-Prepare controlled CUSTOM DOCX
+Prepare controlled CUSTOM DOCX with Chinese markers, canonical markers, or both
         |
         v
-Upload, validate fields, and explicitly publish immutable version
+Inspect unique markers and occurrence counts without storing the upload
+        |
+        v
+User groups markers and configures canonical ASCII keys and field metadata
+        |
+        v
+One Publish confirmation authorizes normalization and publication
+        |
+        v
+Normalize markers, rescan and validate internally, then store canonical DOCX
+        |
+        v
+Persist immutable Template Version and its exact field contract
         |
         v
 Select Case and exact Template Version
@@ -289,8 +304,9 @@ deterministic source categories:
 - `USER_INPUT`: a value entered for this generation and local to the template contract.
 
 Case and system sources require a non-empty source key; user input must not
-have one. The exact approved Case and system source-key vocabularies remain a
-G2 publication decision. D-027 records the persistence constraints.
+have one. D-029 defines the approved G2 source-key vocabulary: the bounded Case
+field keys, the `currentDate` system value, and the no-source-key rule for user
+input. D-027 records the persistence constraints.
 
 Field definitions belong to a template version. Repeated definitions across versions are intentional: they make each published version self-contained and immutable rather than allowing a later central edit to change an old version's contract.
 
@@ -376,9 +392,11 @@ not yet decided and must be finalized in G4.
 
 - **Template identity:** the stable reusable business template across versions.
 - **Published version:** an immutable DOCX source plus its exact field contract.
-- **Controlled placeholder:** in Phase 5, an explicit ASCII machine-key token
-  such as `{{case_number}}` that the application recognizes deterministically;
-  its display label may be localized as `案号`.
+- **Controlled authoring marker:** in Phase 5, an explicit Chinese brace token
+  such as `{{案号}}` prepared in Word/WPS and detected deterministically.
+- **Canonical placeholder:** the ASCII token such as `{{case_number}}` produced
+  after mapping, or retained when published content is used to prepare a later
+  version. It must map to its own key.
 - **Template field / field definition:** metadata declaring a value required or accepted by one template version. “Template variable” is legacy frontend terminology; Phase 5 uses “template field” for the planned domain model.
 - **Generation value:** the value supplied for one field in one generation; it is not part of the reusable field definition.
 - **Value acquisition:** obtaining a value from a Case, the system, user input, or a future extraction suggestion.
@@ -522,7 +540,8 @@ The frontend currently contains mock-backed pages and models for:
 - template binary publication and storage;
 - placeholder scanning and field-contract validation;
 - template REST APIs;
-- renderer library selection or `DocumentTemplateRenderer` implementation;
+- `DocumentTemplateRenderer` implementation and docx4j visual-fidelity
+  verification;
 - generation record persistence;
 - `DocumentGenerationService`;
 - draft-generation or finalization APIs;
@@ -545,11 +564,16 @@ The following decisions are not finalized. They must remain explicit gates rathe
 
 ### 5.2 Template publication API and validation
 
-- Exact G2 request shape for uploading a DOCX and defining or confirming detected fields.
-- The exact grammar and escaping behavior within the approved ASCII
-  machine-key placeholder direction.
-- Duplicate tokens, unsupported document constructs, missing definitions, extra definitions, and invalid source bindings.
-- Exact approved Case and system source-key vocabularies.
+G2 accepts DOCX containing controlled Chinese onboarding markers, canonical
+ASCII placeholders, or both. Chinese marker names contain 1–40 Unicode Han code
+points. Canonical keys match `[a-z][a-z0-9_]{0,99}` and invalid keys are rejected
+rather than normalized. Inspection stores nothing and returns unique markers
+and occurrence counts. The client retains and resubmits the selected file with
+user-confirmed field groups; multiple markers such as `案号` and `案件编号` may map
+to one canonical key, while an existing canonical marker must map to its own
+key. One Publish confirmation authorizes normalization, authoritative rescan,
+validation, storage, and immutable publication. The post-normalization scan is
+an internal safety check rather than a second user confirmation.
 
 Confirmed G2 boundaries are:
 
@@ -558,12 +582,22 @@ Confirmed G2 boundaries are:
 - list responses are bounded and paginated;
 - nested versions are addressed by template-local version number;
 - storage keys and persistence entities are not exposed through the API;
-- publication rescans the exact uploaded bytes and remains authoritative even
-  if a separate scan/preview endpoint is provided.
+- body and nested-table paragraphs are supported replacement locations,
+  including markers split across formatting runs within one paragraph;
+- headers, footers, footnotes, endnotes, comments, and explicitly inspected
+  docx4j text-box representations are checked for marker mistakes and produce
+  location-specific errors; G2 makes no exhaustive-discovery promise for other
+  OOXML parts;
+- Case/system source keys require the exact `TEXT` or `DATE` compatibility in
+  D-029, and publication performs no implicit type conversion;
+- publication rescans the original upload, normalizes the confirmed groups,
+  rescans the canonical result, and stores/hashes the resulting immutable
+  published bytes;
 
 ### 5.3 Renderer selection
 
-Apache POI versus docx4j is intentionally unresolved. Before G3, run a focused spike using representative, non-sensitive DOCX fixtures and compare:
+The focused comparison selected docx4j behind application-owned interfaces.
+Before G3 is accepted, continue representative non-sensitive fixture testing for:
 
 - placeholders split across formatting runs;
 - placeholders in supported tables;
@@ -627,17 +661,24 @@ against MySQL. Preserve this boundary while adding publication behavior.
 
 ### G2 — Template API
 
-Upload and publish `CUSTOM` DOCX templates and exact version-owned field
-definitions. Store template binaries through `DocumentStorage`. Detect
-controlled ASCII tokens, allow an empty contract, reject invalid or mismatched
-contracts, publish subsequent immutable versions, list with bounded pagination,
-retrieve versions by template-local version number, and download exact content.
+Inspect and publish `CUSTOM` DOCX templates and exact version-owned field
+definitions. Detect controlled Chinese onboarding and canonical ASCII markers,
+including mixed later-version input; present them for human grouping and field
+configuration; enforce canonical self-mapping, key grammar, finite location
+validation, and exact source/type compatibility; normalize confirmed Chinese
+groups to canonical ASCII keys; allow an empty contract; store
+canonical template binaries through `DocumentStorage`, publish subsequent
+immutable versions, list templates and versions with bounded pagination,
+retrieve versions by template-local version number, and download exact published
+content.
 
 Suggested commit: `feat: add document template API`
 
-### Renderer-selection spike
+### Renderer verification gate
 
-Before committing to G3, compare Apache POI and docx4j against safe representative DOCX fixtures. Record the decision and supported/unsupported constructs in `DECISIONS.md`.
+The completed comparison selected docx4j. Before G3 is accepted, verify its
+rendering, supported and unsupported constructs, Chinese visual fidelity, and
+formatting preservation with safe representative DOCX fixtures.
 
 ### G3 — DOCX renderer
 

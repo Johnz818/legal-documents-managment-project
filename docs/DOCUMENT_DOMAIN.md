@@ -127,8 +127,9 @@ to reusable field definitions.
 The initial scalar types are `TEXT`, `DATE`, `DECIMAL`, and `BOOLEAN`. The
 deterministic source categories are `CASE_FIELD`, `SYSTEM_VALUE`, and
 `USER_INPUT`. Case and system sources require a source key; user input does not
-have one. The exact approved Case and system source-key vocabularies belong to
-the publication capability.
+have one. D-029 defines the approved G2 source-key vocabulary, exact source/type
+compatibility, and the prohibition on implicit type conversion during
+publication.
 
 These categories describe a field's deterministic default. A future
 evidence-derived candidate belongs to one generation's value-acquisition and
@@ -362,11 +363,31 @@ Expansion follows two rules:
 
 ### 4.1 Template creation and publication
 
-A user-created Document Template receives a stable identity. Phase 5 accepts
-reusable DOCX content prepared with controlled ASCII placeholders. Publication
-identifies those placeholders, requires matching structured field definitions,
-and creates an immutable Template Version. A template with no placeholders and
-an empty field contract is valid.
+A user-created Document Template receives a stable identity. For initial
+onboarding, Phase 5 accepts reusable DOCX content prepared in Word/WPS with
+controlled Chinese brace markers such as `{{案号}}`. A later-version candidate
+derived from published content may retain canonical ASCII placeholders such as
+`{{case_number}}`, and Chinese and canonical markers may coexist. Inspection
+identifies each unique marker and presents it for human review. The user may
+group markers such as `案号` and `案件编号` when they should receive the same value,
+then confirms one canonical ASCII field key, display name, type, required state,
+and value-source binding for the group. A canonical marker must retain its own
+key. Publication deterministically normalizes the confirmed Chinese marker
+groups, rescans and validates the canonical field contract, and creates an
+immutable Template Version. A template with no placeholders and an empty field
+contract is valid.
+
+D-029 defines the exact Chinese and canonical marker grammars, field-key rules,
+finite supported and inspected locations, split-run behavior, repeated-marker
+counting, and unsupported-location validation. These are deliberate G2 input
+constraints rather than a general definition of every future authoring syntax.
+
+Detected Chinese marker text and grouping are transient publication input, not
+additional persistent field attributes. The immutable version stores the
+canonical DOCX and the existing version-owned `fieldKey` and `displayName`.
+Different versions may use different display names for the same conventional
+field key. Field-key uniqueness remains scoped to one version rather than
+forming a global semantic-field catalog.
 
 Existing visual documents that use blank lines, `XXXX`, formatting, or prose
 annotations are not deterministic template contracts. They must be normalized
@@ -444,11 +465,16 @@ The Phase 5 deterministic vertical slice uses:
   explicit user input;
 - basic replacement rendering that preserves supported formatting.
 
-Controlled ASCII placeholders form the Phase 5 runtime contract. Publication
-scans the DOCX, presents detected fields, and requires the field definitions to
-match before the version is published. Field keys are machine-oriented while
-display labels may be localized. Detailed parsing and supported document
-structures belong to the renderer decision rather than the domain model.
+Controlled Chinese `{{...}}` markers form the initial Phase 5 onboarding input,
+while canonical ASCII placeholders form the published runtime contract and may
+also be accepted when canonical content is used to prepare a later version.
+Chinese and canonical markers may coexist. Publication scans the DOCX, presents
+detected markers, lets the user explicitly group equivalent markers and
+configure their fields, and uses one user confirmation to authorize
+normalization and publication. A canonical marker must map to its own key. A
+second scan after normalization is an internal validation step, not another
+human approval. Field keys are machine-oriented while display labels remain
+localized.
 
 The relational field contract is independent of the eventual Word marker
 technology. A future editor may publish tagged content controls or another
@@ -660,21 +686,20 @@ future tickets.
 
 ### Template fields and persistence details
 
-- Which exact Case and system source keys are accepted during publication?
 - How should a custom template's creator be represented after the User domain
   is defined?
 
 ### Template publication and parsing
 
-- What is the exact controlled-placeholder grammar and escaping behavior?
-- How should duplicate tokens, missing or extra definitions, and unsupported
-  document constructs be reported?
-- Which rendering library should be selected after comparing representative
-  DOCX fixtures?
-
-The decision to use controlled DOCX placeholders is confirmed. The unresolved
-question is the detailed parsing and rendering strategy, not whether runtime
-field discovery should be arbitrary.
+G2 uses docx4j behind application-owned scanner/normalizer contracts. It accepts
+DOCX only, controlled Chinese onboarding markers, and canonical ASCII
+placeholders used in later-version candidates. It supports repeated and
+split-run markers in body and table paragraphs and requires explicit human
+grouping and field configuration. It inspects the finite unsupported locations
+defined by D-029 for marker mistakes rather than claiming exhaustive discovery
+across all OOXML parts. Alternative marker forms, legacy DOC conversion,
+semantic-similarity suggestions, and browser editing remain deferred. Exact
+HTTP error payload details remain an implementation-level G2 contract.
 
 ### Generation traceability and lifecycle
 

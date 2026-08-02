@@ -79,10 +79,20 @@ Users can:
 
 Example:
 
-In the Phase 5 delivery, the controlled ASCII placeholder `{{case_number}}`
-represents the field displayed to the user as `案号` and is replaced with
-`(2026)沪0115民初1001号`; `{{lead_lawyer_name}}` is displayed as `主办律师` and
-is replaced with `李律师`.
+In the Phase 5 delivery, a user prepares one controlled DOCX with Chinese
+brace markers such as `{{案号}}`. The application detects the markers, lets the
+user group equivalent labels such as `案号` and `案件编号`, and requires the user
+to confirm one canonical ASCII field key such as `case_number` plus its display
+name and value source. One publication confirmation authorizes deterministic
+normalization to `{{case_number}}`, internal validation, and creation of the
+immutable version. During generation that field is replaced with a reviewed
+value such as `(2026)沪0115民初1001号`.
+
+When preparing a later version from downloaded published content, the user may
+retain canonical markers such as `{{case_number}}` and add new Chinese markers.
+The application presents both for review, requires every canonical marker to
+retain its own key, normalizes the Chinese markers, and publishes the next
+immutable version after the same single confirmation.
 
 #### Final template-authoring target
 
@@ -182,13 +192,16 @@ an approved legal fact without human review.
 The current milestone completes this production-shaped vertical slice:
 
 ```text
-User prepares a DOCX with controlled ASCII placeholders
+User prepares a DOCX with Chinese onboarding markers, canonical markers, or both
         |
         v
-Upload and validate CUSTOM template content and field definitions
+Application detects markers and shows them for grouping and field configuration
         |
         v
-Explicitly publish immutable Template Version
+User confirms canonical ASCII keys, display labels, and value sources
+        |
+        v
+Application normalizes, validates, and explicitly publishes immutable Template Version
         |
         v
 User selects Case and exact Template Version
@@ -448,14 +461,27 @@ state, deterministic default source, and display order. Future extracted values
 also carry provenance, confidence, and human-review state; those facts belong
 to the generation result rather than the template definition.
 
-Phase 5 marker examples use ASCII machine keys with localized display labels:
+Phase 5 authoring markers use controlled Chinese labels that are normalized to
+ASCII machine keys after human review:
 
-- `{{case_number}}` — `案号`
-- `{{court_name}}` — `法院`
-- `{{plaintiff}}` — `原告`
-- `{{defendant}}` — `被告`
-- `{{lead_lawyer_name}}` — `主办律师`
-- `{{current_date}}` — `当前日期`
+- `{{案号}}` or `{{案件编号}}` → `{{case_number}}` — display name `案号`
+- `{{法院名称}}` → `{{court_name}}` — display name `法院`
+- `{{申请人名称}}` → `{{plaintiff}}` — display name `申请人`
+- `{{被申请人名称}}` → `{{defendant}}` — display name `被申请人`
+- `{{代理律师}}` → a confirmed Case binding or template-local user input
+- `{{当前日期}}` → `{{current_date}}` — display name `当前日期`
+
+A later-version candidate derived from published content may already contain
+canonical markers such as `{{case_number}}`. Existing canonical markers may
+coexist with newly added Chinese markers and must retain their own field keys.
+Canonical keys use lowercase ASCII letters, digits, and underscores, begin with
+a letter, and are at most 100 characters.
+
+The application does not decide semantic equivalence automatically in Phase 5.
+It shows each unique detected marker and lets the user explicitly group markers
+that should receive the same generated value. Editing boilerplate or adding and
+removing marker locations inside the browser remains part of the future
+Template Draft authoring phase.
 
 The field contract is intentionally independent of the long-term Word marker
 technology. A future browser editor may publish tagged content controls while

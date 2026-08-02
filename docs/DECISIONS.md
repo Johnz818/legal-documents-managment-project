@@ -639,11 +639,12 @@ The following designs are rejected or deferred for the current milestones:
   mechanism;
 - conditions, formulas, repeating collections, and automatic finalization.
 
-Library and provider choices remain decision gates rather than accepted
-dependencies. Evaluate Apache POI against docx4j using representative DOCX
-fixtures before selecting the renderer. Later extraction milestones must
-separately evaluate PDFBox/Tika, Chinese OCR options, background processing,
-and a provider-neutral structured AI extraction boundary.
+At the time of this decision, the renderer library remained a decision gate and
+required an Apache POI/docx4j comparison using representative DOCX fixtures.
+D-029 records the resulting docx4j selection and remaining G3 verification
+gate. Later extraction milestones must separately evaluate PDFBox/Tika, Chinese
+OCR options, background processing, and a provider-neutral structured AI
+extraction boundary.
 
 ---
 
@@ -665,8 +666,9 @@ because separate publications may intentionally use identical binary content.
 The initial scalar field types are `TEXT`, `DATE`, `DECIMAL`, and `BOOLEAN`.
 The deterministic source categories are `CASE_FIELD`, `SYSTEM_VALUE`, and
 `USER_INPUT`. Case and system sources require a non-empty source key; user input
-must not have one. Exact approved Case and system source-key vocabularies remain
-publication-layer decisions for G2.
+must not have one. At the time of D-027, the exact Case and system source-key
+vocabularies remained a G2 publication-layer decision. D-029 records the
+resulting approved vocabulary and source/type compatibility.
 
 Version numbers and field keys are unique only within their parent. Field
 display order is also unique within a version. Foreign keys use restrictive
@@ -703,9 +705,9 @@ a new draft; only explicit publication creates the next immutable Template
 Version.
 
 The current Phase 5 vertical slice does not implement that browser editor,
-legacy-DOC normalization, draft persistence, or suggestion workflow. It accepts
-controlled DOCX content using ASCII machine-oriented placeholder keys with
-localized display labels. It allows an empty placeholder set and empty field
+legacy-DOC normalization, draft persistence, or suggestion workflow. D-029
+refines its controlled DOCX authoring-marker and publication contract. It allows
+an empty placeholder set and empty field
 contract, creates only `CUSTOM` templates through the public creation API, lists
 templates through a bounded paginated contract, and addresses nested versions
 by their template-local version number. `PRESET` authoring remains unavailable
@@ -803,6 +805,103 @@ minimal mechanisms are the current delivery boundary rather than the final
 product experience. G1's stable Template identity, immutable versions,
 version-owned fields, storage metadata, and SHA-256 traceability remain the
 accepted foundation.
+
+---
+
+### D-029
+
+Status: Accepted
+
+G2 completes a DOCX-only controlled publication slice. For initial onboarding,
+a user prepares one DOCX in Word/WPS with explicit Chinese brace markers such as
+`{{案号}}`. A later-version candidate derived from published content may already
+contain canonical ASCII placeholders such as `{{case_number}}`. Legacy
+`.doc`, visual blanks, `XXXX`, color, underlining, prose annotations, alternate
+marker syntaxes, browser boilerplate editing, automatic semantic-similarity
+decisions, and content controls remain deferred.
+
+The Chinese authoring-marker grammar is exactly `{{名称}}`, where `名称` contains
+from 1 through 40 Unicode Han code points. Whitespace, line breaks, nested
+braces, punctuation, digits, and ASCII characters are not accepted inside a
+Chinese marker. The canonical placeholder grammar is `{{field_key}}`, where the
+key matches `[a-z][a-z0-9_]{0,99}`. Invalid keys are rejected rather than
+silently lowercased or otherwise normalized. Chinese and canonical markers may
+coexist in one DOCX so a user can retain existing canonical placeholders while
+adding new Chinese markers to a later version.
+
+A marker may be split across DOCX formatting runs within one supported
+paragraph. G2 scans and normalizes ordinary paragraphs in the main document body
+and paragraphs inside tables, including nested tables. It also inspects the
+finite set of headers, footers, footnotes, endnotes, comments, and text boxes
+whose text is exposed through the explicitly implemented docx4j inspection path;
+controlled marker syntax found there causes a location-specific validation
+error. Content controls, other drawing or diagram content, charts, embedded
+documents or objects, custom XML, and arbitrary OOXML extensions are outside the
+G2 marker contract. G2 does not promise exhaustive marker discovery across every
+OOXML part; bounded package preflight separately rejects unsafe or structurally
+unsupported input. Repeated identical markers produce one inspection result
+with an occurrence count.
+
+Inspection stores nothing and reports each unique detected marker and occurrence
+count. The user reviews the results, may explicitly group different markers such
+as `案号` and `案件编号` when they should receive the same value, and configures
+one version-owned field for each resulting group: canonical ASCII `fieldKey`,
+localized `displayName`, scalar type, required state, default source, and source
+key. A Chinese marker requires explicit mapping. A canonical marker already
+identifies its key and must map to that same key, although its other field
+metadata must still be confirmed for the new version. Multiple Chinese markers
+may be explicitly grouped under one key, and Chinese markers may join a matching
+canonical marker's group. Two distinct canonical markers cannot be grouped
+because each must retain its own key. The application does not infer
+legal-semantic equivalence automatically.
+
+Detected Chinese marker names and grouping are transient publication input, not
+new persistent field attributes. The existing `displayName` is the chosen
+user-facing label for the resulting field; `fieldKey` remains unique only within
+one template version and does not create a global semantic catalog. Different
+templates may use `案号`, `案件编号`, or another display name with the same
+conventional key `case_number`. Value acquisition remains separately identified
+by `defaultSource` and a source key such as `caseNumber`.
+
+One user action confirms publication. The application then deterministically
+normalizes every confirmed marker group to its ASCII token, for example both
+`{{案号}}` and `{{案件编号}}` to `{{case_number}}`; reopens and rescans the
+canonical DOCX; validates that its keys exactly match the field contract; hashes
+and stores the canonical bytes; and persists the immutable Template Version.
+The post-normalization scan is an internal safety check, not a second human
+approval. The browser may retain and resubmit the selected file during this
+single page session; Phase 5 does not persist an autosaved Template Draft.
+
+G2 uses docx4j behind application-owned scanner and normalizer contracts. The
+spike established controlled split-run, body, table, nested-table, Chinese text,
+and save/reopen feasibility. It demonstrated exploratory traversal of content
+controls but did not establish content-control publication or rendering support.
+docx4j/JAXB types must not escape the adapter boundary. G3 separately owns
+final-value rendering and must complete visual-fidelity verification with safe
+representative Chinese DOCX fixtures before acceptance.
+
+The initial approved deterministic value bindings are:
+
+- `CASE_FIELD` with value type `TEXT`: `caseNumber`, `caseName`, `courtName`,
+  `caseCause`, `plaintiff`, `defendant`, `leadLawyerName`, and `description`;
+- `CASE_FIELD` with value type `DATE`: `filingDate`, `hearingDate`, and
+  `judgmentDate`;
+- `SYSTEM_VALUE`: `currentDate` with value type `DATE`;
+- `USER_INPUT`: no source key and any approved scalar field type.
+
+Case and system sources require the listed exact value type and a non-empty
+source key. `USER_INPUT` must not have a source key. G2 does not perform implicit
+conversion between incompatible source and field types. Date presentation
+formatting remains a G3 renderer decision.
+
+Publication performs bounded DOCX/ZIP package preflight before docx4j parsing,
+never resolves external resources, validates supported marker locations, stores
+binary content through `DocumentStorage`, and uses best-effort binary cleanup if
+metadata persistence fails. Later-version number allocation uses a short
+transactional lock on the stable template only after scanning, normalization,
+and binary storage have completed. Template and version listing are bounded and
+paginated; nested versions are addressed by template-local version number; API
+contracts do not expose storage keys or persistence entities.
 
 ---
 
