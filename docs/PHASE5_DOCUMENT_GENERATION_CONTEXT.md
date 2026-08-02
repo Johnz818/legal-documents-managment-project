@@ -2,9 +2,34 @@
 
 ## Purpose of this document
 
-This document preserves the business understanding, accepted architecture, current repository state, and unresolved decisions for Phase 5. It is a handoff for continuing the work in a new conversation; it does not replace `PRODUCT.md`, `DECISIONS.md`, or `ROADMAP.md`.
+This document preserves the business understanding, accepted architecture,
+current repository state, and unresolved decisions for Phase 5. It is a handoff
+for continuing the work in a new conversation; it does not replace
+`PRODUCT.md`, `DOCUMENT_DOMAIN.md`, `DECISIONS.md`, or `ROADMAP.md`.
 
-The next planned ticket is **G1 — Template persistence**. No template or generation backend code has been implemented yet.
+Lifecycle: this handoff is active only while Phase 5 is in progress. Before
+Phase 5 is declared complete, every lasting product goal, domain rule, accepted
+decision, and future roadmap item must be present in `PRODUCT.md`,
+`DOCUMENT_DOMAIN.md`, `DECISIONS.md`, or `ROADMAP.md`. At Phase 5 completion,
+mark this file deprecated and stop using it as an architecture authority or the
+starting context for later phases. Retain it only as historical delivery
+context unless the repository's documentation-retention policy later removes
+it.
+
+G1 — Template persistence is implemented and committed locally as `72a1c65`.
+The next planned ticket is **G2 — Template API**. Template publication,
+rendering, generation, finalization, and their frontend journey are not yet
+implemented.
+
+The guiding delivery rule is:
+
+> Phase 5 is a production-shaped vertical slice and an expandable foundation,
+> not the complete authoring and evidence-assisted product.
+
+The project will complete, secure, and deploy the deterministic vertical slice
+before implementing the final browser-authoring and evidence-extraction
+experience. Future capabilities must extend the immutable publication and
+Generation Value boundaries rather than replace them.
 
 This document uses the following status language deliberately:
 
@@ -22,30 +47,33 @@ The feature's business goal is to reduce the manual work required to transfer Ca
 
 The product should eventually let a user:
 
-1. Manage system-provided and user-created reusable legal-document templates.
-2. Identify the values required by a template.
-3. Select a Case and a published template version.
-4. Populate fields from approved Case data and explicit user input.
-5. Generate a DOCX draft while preserving the template's supported formatting.
-6. Review the generated document and explicitly finalize it.
+1. Upload a Word document or create a blank reusable-template draft.
+2. Edit boilerplate and placeholders in a browser and review system suggestions.
+3. Explicitly publish an immutable reusable-template version.
+4. Select a Case and one exact published template version.
+5. Review values acquired from Case data, system values, direct user input, and
+   eventually Case-document evidence.
+6. Generate a DOCX draft while preserving supported formatting.
+7. Review or eventually edit the Case-specific draft and explicitly finalize it.
 
 The longer-term business target also uses information contained in uploaded Case files—for example evidence, bank statements, chat screenshots, pleadings, and scanned materials—to suggest field values. A lawyer must be able to inspect the supporting document and page, then accept, edit, or reject each suggestion.
 
 Chinese example:
 
 ```text
-模板字段：{{案号}}
+模板字段：{{case_number}}（显示名称：案号）
 案件数据：(2026)沪0115民初1001号
-生成结果：在 DOCX 中以案件案号替换 {{案号}}
+生成结果：在 DOCX 中以案件案号替换 {{case_number}}
 ```
 
 A future evidence-assisted example is a suggestion such as `借款本金：200000元`, accompanied by its source file and page. The suggestion is not an approved legal fact until a human confirms it.
 
-### 1.2 Confirmed MVP user journey
+### 1.2 Confirmed Phase 5 deterministic vertical-slice journey
 
-Phase 5 deliberately delivers a useful workflow without OCR or AI:
+Phase 5 deliberately delivers a useful, deployable workflow without a browser
+Word editor, OCR, or AI:
 
-- manage reusable system-provided and user-created templates;
+- upload and manage user-created `CUSTOM` templates;
 - publish a version of a template with explicitly defined scalar fields;
 - select a Case and a published template version;
 - review values supplied from approved Case data, defined system values, and
@@ -53,15 +81,21 @@ Phase 5 deliberately delivers a useful workflow without OCR or AI:
 - generate and download a DOCX draft;
 - explicitly finalize the reviewed result.
 
+This is the current delivery milestone, not the final product ceiling. The
+final authoring workflow adds mutable browser drafts and advisory placeholder
+suggestions upstream of publication. The final evidence workflow adds reviewed
+candidate values and provenance upstream of deterministic rendering.
+
 Finalization is an explicit workflow action by a human. It does not mean that
 the application independently verifies the document's legal correctness.
 
-### 1.3 Confirmed MVP technical boundary
+### 1.3 Confirmed Phase 5 deterministic technical boundary
 
 The accepted technical boundary supporting that user journey is:
 
 - one DOCX source file for each immutable published template version;
-- controlled, explicit placeholders in the DOCX;
+- controlled ASCII machine-key placeholders in the DOCX, with localized
+  display labels and an allowed empty field contract;
 - structured scalar field definitions owned by the published version;
 - deterministic value acquisition and DOCX rendering;
 - binary content outside MySQL through the existing `DocumentStorage` boundary;
@@ -81,6 +115,8 @@ The following are explicitly outside the initial G1–G6 milestone:
 - automatic acceptance of AI output or automatic finalization;
 - arbitrary template expressions, conditions, formulas, or repeating collections;
 - browser-based Word editing;
+- mutable template-draft and template-suggestion persistence;
+- legacy-DOC normalization inside the application;
 - DOCX-to-PDF conversion;
 - replacing a draft with a separately reviewed document;
 - production malware scanning, authorization, audit history, and
@@ -94,6 +130,11 @@ milestone and are documented more precisely in Section 3:
 - a global semantic-field catalog in G1;
 - a second NoSQL or vector database.
 
+These capabilities are deferred from the current vertical slice, not rejected
+as final product goals. Browser template authoring is confirmed as a future
+product phase. Begin it with an editor integration and licensing spike; do not
+design draft persistence around an unverified editor API.
+
 The deferred evidence-assisted sequence is:
 
 1. **EG1 — Text extraction:** page-aware extraction from supported PDF and Word files.
@@ -101,6 +142,101 @@ The deferred evidence-assisted sequence is:
 3. **EG3 — Structured AI suggestions:** normalized evidence mapped to known field schemas.
 4. **EG4 — Human evidence review:** provenance, confidence, and accept/edit/reject workflow.
 5. **EG5 — Template onboarding assistance:** suggestions for normalizing legacy visual templates, followed by human approval and deterministic publication.
+
+### 1.5 Current and eventual workflow summary
+
+Current Phase 5 deterministic vertical-slice workflow:
+
+```text
+Prepare controlled CUSTOM DOCX
+        |
+        v
+Upload, validate fields, and explicitly publish immutable version
+        |
+        v
+Select Case and exact Template Version
+        |
+        v
+Prefill Case/system values and review manual input or corrections
+        |
+        v
+Persist final Generation Values and validate required fields
+        |
+        v
+Render deterministic DOCX and persist generated CaseDocument
+        |
+        v
+Download, review, and explicitly finalize
+```
+
+Eventual product workflow:
+
+```text
+Upload DOC/DOCX or create blank TemplateDraft
+        |
+        v
+System suggests variable regions from markers, formatting, context, or AI
+        |
+        v
+User edits boilerplate and placeholders in browser
+        |
+        v
+Human-approved immutable publication
+        |
+        v
+Select Case and exact version
+        |
+        v
+Collect Case/system/manual/evidence candidate values
+        |
+        v
+Show conflicts, confidence, and source-document/page provenance
+        |
+        v
+Human approves final Generation Values
+        |
+        v
+Deterministic rendering and browser review of Case-specific draft
+        |
+        v
+Explicit finalization
+```
+
+Model connection and expansion:
+
+```text
+[future authoring]
+
+TemplateSuggestion ───────────────────────> TemplateDraft
+[future infrastructure candidate]
+browser editor integration/session ──────> TemplateDraft
+                                                |
+                                                | explicit publication
+                                                v
+[implemented reusable foundation]
+
+DocumentTemplate 1 ── * DocumentTemplateVersion 1 ── * DocumentTemplateField
+                                                               |
+                                                               v
+[Phase 5 generation]
+
+Case ──────────────────────────────────────────> DocumentGeneration
+System values / User input ────────────────────>       |
+                                                        v
+                                                 GenerationValue
+                                                        ^
+                                                        |
+[future evidence]                                       |
+
+CaseDocument -> extraction/OCR/AI -> EvidenceCandidate -+
+                   source/page/confidence + human review
+
+GenerationValue -> deterministic renderer -> generated CaseDocument -> finalize
+```
+
+Future authoring connects only through explicit publication. Future evidence
+connects only through human-reviewed Generation Values. This is the central
+rule that lets Phase 5 remain small without making its model disposable.
 
 ## 2. Domain understanding
 
@@ -118,17 +254,17 @@ One Case may own many Case documents. A Case document belongs to one Case only. 
 
 The existing metadata includes the Case ID, original filename, backend-generated storage key, source, technical format, content type, size, and timestamps. The binary content is stored outside MySQL.
 
-### 2.2 Planned Phase 5 concepts
+### 2.2 Implemented publication foundation and planned generation concepts
 
 #### DocumentTemplate
 
-A stable reusable identity representing the business template, such as `授权委托书` or `民事起诉状`. A template may be system-provided (`PRESET`) or user-created (`CUSTOM`). The stable identity groups its published versions; it is not itself a generated Case document.
+A stable reusable identity representing the business template, such as `授权委托书` or `民事起诉状`. The implemented model can represent `PRESET` and `CUSTOM`, but the Phase 5 public creation API will create only `CUSTOM`. `PRESET` authoring remains unavailable until administrator identity and authorization exist. The stable identity groups its published versions; it is not itself a generated Case document.
 
 #### DocumentTemplateVersion
 
 An immutable published snapshot of one template. Each version owns exactly one DOCX source and its storage metadata, including the content SHA-256 digest. Versioning exists so a generated document can always identify the exact template content and field contract used.
 
-A user's edits to one generated Case document do not alter the reusable template and do not create a new template version. A version is created only through explicit reusable-template publication. A future browser editor may have a separate unpublished working draft, but that is not part of G1–G6.
+A user's edits to one generated Case document do not alter the reusable template and do not create a new template version. A version is created only through explicit reusable-template publication. The final browser authoring product has separate unpublished working drafts, but draft saves and autosaves are not part of G1–G6 and never create versions.
 
 #### DocumentTemplateField
 
@@ -180,6 +316,27 @@ Values used for a specific generation are separate from template field definitio
 
 Future extracted values—not template fields—must carry the suggested value, source document and page, confidence, and human-review state.
 
+G4 must give Generation Values stable relational identities so those future
+candidate, provenance, and review records can attach additively. It must not
+add unused OCR or AI columns now. When Case data, evidence, and manual input
+disagree, the future review experience shows alternatives rather than applying
+hidden source precedence. A file uploaded during generation should normally
+become a Case Document so provenance has a stable source identity.
+
+#### TemplateDraft and TemplateSuggestion — confirmed future concepts
+
+The final authoring workflow adds a mutable Template Draft before publication.
+A draft may begin from a Word upload, a blank browser document, or a copy of one
+published version. Advisory Template Suggestions may be derived from brackets,
+`XXXX`, blanks, underlining, color, prose annotations, known Case values, or
+later semantic analysis. Users accept, reject, resize, rename, remap, or create
+placeholders manually. Only the finalized deterministic field contract is
+published.
+
+These concepts are deliberately not persisted in G2–G6. Their schema follows a
+future browser-editor integration and licensing spike. Future authoring calls
+the same publication boundary used by direct Phase 5 DOCX upload.
+
 #### DocumentGenerationService
 
 The application service responsible for coordinating the complete generation use case:
@@ -219,7 +376,9 @@ not yet decided and must be finalized in G4.
 
 - **Template identity:** the stable reusable business template across versions.
 - **Published version:** an immutable DOCX source plus its exact field contract.
-- **Controlled placeholder:** an explicit token such as `{{案号}}` that the application recognizes deterministically.
+- **Controlled placeholder:** in Phase 5, an explicit ASCII machine-key token
+  such as `{{case_number}}` that the application recognizes deterministically;
+  its display label may be localized as `案号`.
 - **Template field / field definition:** metadata declaring a value required or accepted by one template version. “Template variable” is legacy frontend terminology; Phase 5 uses “template field” for the planned domain model.
 - **Generation value:** the value supplied for one field in one generation; it is not part of the reusable field definition.
 - **Value acquisition:** obtaining a value from a Case, the system, user input, or a future extraction suggestion.
@@ -336,6 +495,13 @@ This layered approach may later give AI extraction stable targets without forcin
 - Case Detail frontend integration for live file upload, list, download, and removal.
 - best-effort upload compensation and the documented non-atomic storage/database boundary.
 - backend and frontend container images, local Compose environment with persistent MySQL and document volumes, GitHub Actions application verification, and container build verification.
+- Flyway V8 tables `document_templates`, `document_template_versions`, and
+  `document_template_fields`.
+- JPA entities and deliberately narrow repositories for stable template
+  identity, immutable published version metadata, and immutable version-owned
+  field definitions.
+- MySQL-verified uniqueness, restrictive foreign keys, scalar/source enums,
+  storage metadata, and lowercase SHA-256 persistence constraints from D-027.
 
 ### 4.2 Present only as frontend mocks
 
@@ -353,8 +519,6 @@ The frontend currently contains mock-backed pages and models for:
 
 ### 4.3 Not implemented
 
-- template database migrations;
-- `DocumentTemplate`, `DocumentTemplateVersion`, or `DocumentTemplateField` JPA entities and repositories;
 - template binary publication and storage;
 - placeholder scanning and field-contract validation;
 - template REST APIs;
@@ -369,20 +533,33 @@ The frontend currently contains mock-backed pages and models for:
 
 The following decisions are not finalized. They must remain explicit gates rather than being silently assumed during implementation.
 
-### 5.1 G1 persistence details
+### 5.1 Completed G1 persistence boundary
 
 - Creator and ownership relationships remain deferred until the User domain
   provides a real identity.
 - Template archival or deletion behavior remains deferred until a business
   lifecycle is approved; G1 preserves published history with restrictive
   foreign keys.
+- G1 is complete. Do not redesign its stable identity, immutable version, or
+  version-owned field boundaries to implement G2.
 
 ### 5.2 Template publication API and validation
 
 - Exact G2 request shape for uploading a DOCX and defining or confirming detected fields.
-- Exact placeholder token grammar and escaping rules.
+- The exact grammar and escaping behavior within the approved ASCII
+  machine-key placeholder direction.
 - Duplicate tokens, unsupported document constructs, missing definitions, extra definitions, and invalid source bindings.
-- How system-provided templates are introduced without adding speculative seed-data management.
+- Exact approved Case and system source-key vocabularies.
+
+Confirmed G2 boundaries are:
+
+- an empty placeholder set and empty field contract are valid;
+- the public creation API creates only `CUSTOM` templates;
+- list responses are bounded and paginated;
+- nested versions are addressed by template-local version number;
+- storage keys and persistence entities are not exposed through the API;
+- publication rescans the exact uploaded bytes and remains authoritative even
+  if a separate scan/preview endpoint is provided.
 
 ### 5.3 Renderer selection
 
@@ -424,25 +601,37 @@ These are production-readiness requirements but are not permission to expand G1�
 - Whether keyword/page filtering is enough before considering vector retrieval or a vector database.
 - Sensitive-data transmission, logging, redaction, retention, and deletion rules.
 
+### 5.7 Future browser template authoring
+
+- Select an embedded editor only after a time-boxed integration, fidelity,
+  deployment, security, and licensing spike with safe representative Chinese
+  Word fixtures.
+- Verify legacy `.doc` normalization, blank-document creation, tagged
+  placeholder support, save callbacks, side-panel integration, and DOCX
+  round-trip fidelity before defining draft persistence.
+- Keep mutable Template Drafts and advisory Template Suggestions separate from
+  immutable published versions and their exact field contracts.
+- Treat brackets, blanks, `XXXX`, formatting, and prose annotations as
+  suggestions rather than automatically approved fields.
+- Ensure editing a generated Case document remains separate from editing and
+  publishing reusable template content.
+
 ## 6. Recommended next implementation steps
 
 Continue with the already approved incremental sequence. Do not combine these tickets without a separate scope review.
 
-### G1 — Template persistence
+### G1 — Template persistence (complete)
 
-Persist stable template identity, immutable DOCX version metadata, and relational structured scalar field definitions.
-
-- Add one Flyway migration.
-- Add JPA entities and Spring Data repositories in the Document Template feature package.
-- Use string enum persistence and application-owned timestamps consistent with existing backend decisions.
-- Verify Flyway/JPA compatibility, relationships, uniqueness, check constraints, immutability assumptions, and repository behavior against real MySQL.
-- Do not add REST APIs, binary upload, scanning, rendering, generation, frontend changes, seed data, a semantic catalog, or a new dependency.
-
-Suggested commit: `feat: persist versioned document templates`
+Implemented by local commit `72a1c65` with Flyway and repository verification
+against MySQL. Preserve this boundary while adding publication behavior.
 
 ### G2 — Template API
 
-Upload, list, and retrieve DOCX templates and exact version-owned field definitions. Store template binaries through `DocumentStorage`. Detect controlled tokens and reject invalid or mismatched field contracts.
+Upload and publish `CUSTOM` DOCX templates and exact version-owned field
+definitions. Store template binaries through `DocumentStorage`. Detect
+controlled ASCII tokens, allow an empty contract, reject invalid or mismatched
+contracts, publish subsequent immutable versions, list with bounded pagination,
+retrieve versions by template-local version number, and download exact content.
 
 Suggested commit: `feat: add document template API`
 
@@ -458,7 +647,11 @@ Suggested commit: `feat: render docx templates`
 
 ### G4 — Draft generation
 
-Introduce generation-record persistence and `DocumentGenerationService`. Coordinate approved Case values, explicit user input, validation, rendering, storage, Case-document metadata, and compensation.
+Introduce generation-record persistence, stable relational Generation Value
+records, and `DocumentGenerationService`. Coordinate approved Case and system
+values, explicit user input or correction, validation, rendering, storage,
+Case-document metadata, and compensation. Keep evidence provenance additive and
+deferred rather than adding speculative extraction columns.
 
 Suggested commit: `feat: generate document drafts`
 
@@ -473,6 +666,23 @@ Suggested commit: `feat: finalize generated documents`
 Replace only the relevant template and generation mock flow with the live APIs. Keep unrelated mock-backed modules unchanged.
 
 Suggested commit: `feat: integrate document generation`
+
+### After G6
+
+Complete minimum security, cloud deployment, and the required reliability
+baseline before expanding the Phase 5 vertical slice into browser template
+authoring or evidence-assisted generation. This produces a demonstrable
+end-to-end system while keeping both future capabilities additive:
+
+```text
+Future TemplateDraft ──> existing publication boundary
+Future evidence candidate ──> reviewed Generation Value ──> existing renderer
+```
+
+The browser-authoring phase begins with the editor spike described in Section
+5.7. Evidence assistance follows its separately governed extraction, OCR,
+privacy, provenance, and human-review roadmap. Neither is permission to add
+speculative infrastructure to G2–G6.
 
 ### Verification discipline for every ticket
 

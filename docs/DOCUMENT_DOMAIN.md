@@ -12,6 +12,18 @@ The longer-term business goal is to assist this process by extracting possible
 values from Case materials. Such assistance remains advisory: a human must
 review the supporting evidence and approve the values used in a legal document.
 
+The final authoring target also lets a user upload a Word document or create a
+blank template, edit reusable boilerplate in a browser, review suggested
+variable regions, and explicitly publish an immutable version. Mutable
+authoring drafts exist upstream of published versions; evidence suggestions
+exist upstream of approved generation values.
+
+Phase 5 is a production-shaped vertical slice and an expandable foundation,
+not the complete authoring and evidence-assisted product. It completes
+controlled publication, deterministic Case/system/manual value resolution,
+DOCX generation, and human finalization end to end. Future authoring and
+extraction extend this core instead of replacing it.
+
 Case Document upload, download, management, and removal are already established
 parts of the Document domain. This document describes those concepts where they
 intersect with document generation, while focusing primarily on the template
@@ -89,7 +101,8 @@ Template Version exists to preserve generation traceability. A generation must
 be associated with the exact reusable content and field definitions used at
 that time, even if a later version of the same template is published.
 
-A version does not represent an output format. The MVP has one intended
+A version does not represent an output format. The Phase 5 deterministic
+vertical slice has one intended
 template and generated format: DOCX. A version also does not represent edits to
 one Case-specific generated document.
 
@@ -117,7 +130,42 @@ deterministic source categories are `CASE_FIELD`, `SYSTEM_VALUE`, and
 have one. The exact approved Case and system source-key vocabularies belong to
 the publication capability.
 
-### 2.5 Document Generation
+These categories describe a field's deterministic default. A future
+evidence-derived candidate belongs to one generation's value-acquisition and
+review workflow; it is not mutable provenance stored on the reusable field
+definition.
+
+### 2.5 Template Draft — target capability
+
+A **Template Draft** is a mutable, unpublished working document used to author
+new reusable content or prepare a change to a published template. It may begin
+from an uploaded Word document, a blank browser document, or a copy of one exact
+published Template Version.
+
+Draft saves, editor autosaves, and suggestion decisions do not create published
+versions. Explicit publication validates the finalized document and field
+contract and creates a new immutable Template Version. A draft based on a
+published version does not mutate that version.
+
+Template Draft is part of the final product model but is not persisted in the
+current Phase 5 vertical slice. Its exact schema must follow a browser-editor
+integration and licensing spike because selection identities, save callbacks,
+and editor-native annotations affect the correct persistence boundary.
+
+### 2.6 Template Suggestion — target capability
+
+A **Template Suggestion** is an advisory proposal that some imported content
+represents a variable region. Signals may include brackets, `XXXX`, blank
+lines, color, underlining, prose annotations, matching Case values, or later
+semantic analysis.
+
+A suggestion is not a Template Field and is never a published runtime contract
+until a user accepts or adjusts it. The user may reject it, change the selected
+text, choose an ASCII field key, change its source binding, or create a field
+manually. Published placeholders must use the deterministic representation
+supported by that Template Version.
+
+### 2.7 Document Generation
 
 **Document Generation** is the coordinated business process that creates a
 Case-related draft from one exact Template Version and a set of resolved input
@@ -133,7 +181,23 @@ state representation remain open for the generation tickets.
 Document Generation does not define template structure, implement binary
 storage, or approve legal facts automatically.
 
-### 2.6 Generated Document
+### 2.8 Generation Value
+
+A **Generation Value** is the final scalar value used for one Template Field in
+one Document Generation. It is separate from the reusable field definition so
+the system can retain what was actually rendered and how it was acquired.
+
+Phase 5 values are acquired from a declared Case field, a defined system value,
+or explicit user input. Future evidence assistance may propose one or more
+candidate values from Case Documents. A candidate retains its source document,
+page or location, confidence where applicable, and human-review decision. Only
+the approved final value is passed to the deterministic renderer.
+
+Generation Values should have stable relational identities so future evidence,
+candidate, provenance, and review records can refer to them additively. Phase 5
+must not add unused OCR or AI columns before those capabilities are designed.
+
+### 2.9 Generated Document
 
 A **Generated Document** is the Case-related output produced by rendering an
 exact Template Version with resolved input values. In the document collection,
@@ -144,7 +208,7 @@ It exists as a Case-specific work product. It is not a reusable template and is
 not a Template Version. Changes made for one Case must not mutate the reusable
 template or create a template version.
 
-### 2.7 Document Storage
+### 2.10 Document Storage
 
 **Document Storage** is an infrastructure capability, not a domain entity. It
 stores, opens, and removes binary content through storage references.
@@ -168,6 +232,7 @@ Template Version 1 ─── defines ─── * Document Field Definition
 
 Document Generation ─── uses ─── one exact Template Version
 Document Generation ─── occurs for ─── one Case
+Document Generation 1 ─── resolves ─── * Generation Value
 
 Template Version ─── provides structure for ─── Generated Document
 ```
@@ -203,21 +268,117 @@ Template and generated-document binaries are stored separately from their
 business metadata. The selected storage technology does not change the domain
 relationships.
 
+### 3.3 Current and expandable model
+
+Status legend:
+
+- `[implemented]` exists in the repository now;
+- `[Phase 5 planned model]` is a domain record planned for the deterministic
+  vertical slice;
+- `[Phase 5 planned record]` is a new instance of an already implemented model;
+- `[Phase 5 acquisition channel]` supplies a value but is not a separate domain
+  entity;
+- `[Phase 5 planned capability]` is application behavior rather than a domain
+  record;
+- `[future conceptual model]` is a likely future business concept whose schema
+  is not yet accepted;
+- `[future infrastructure candidate]` is an unselected technical integration.
+
+```text
+AUTHORING SIDE
+
+[future conceptual model] TemplateDraft
+    | may start from upload, blank document, or published version
+    |
+    +── has ──> [future conceptual model] TemplateSuggestion
+    |
+    +── edited through ──> [future infrastructure candidate]
+                           browser editor integration/session
+    |
+    +── explicit publication ───────────────────────────────┐
+                                                            v
+PUBLISHED REUSABLE CORE
+
+                                         [implemented] DocumentTemplate
+                                                    1
+                                                    |
+                                                    *
+                                 [implemented] DocumentTemplateVersion
+                                                    1
+                                                    |
+                                                    *
+                                   [implemented] DocumentTemplateField
+                                                    |
+                                                    | required contract
+                                                    v
+GENERATION SIDE
+
+[implemented] Case ──────────────────────> [Phase 5 planned capability]
+                                           Document Generation process
+                                                   |
+[Phase 5 acquisition channel] Case field ──────────┤
+[Phase 5 acquisition channel] System value ────────┼──> [Phase 5 planned model]
+[Phase 5 acquisition channel] Explicit user input ─┘    GenerationValue
+                                                             ^
+                                                             |
+[future conceptual model] EvidenceCandidate ────────────────┘
+    | source CaseDocument
+    | page/confidence
+    | human review
+
+  [Phase 5 planned capability] DocumentGenerationService
+      |
+      +── renderer ──> generated DOCX binary ──> [implemented] DocumentStorage
+      |
+      +── file metadata ──────────────────────> [Phase 5 planned record]
+      |                                         generated instance of the
+      |                                         implemented CaseDocument model
+      |                                             |
+      |                                             +── references ──>
+      |                                                 stored DOCX binary
+      |
+      +── generation metadata ────────────────> [Phase 5 planned model]
+                                                GenerationRecord
+                                                    |
+                                                    +── result ──>
+                                                    |   generated CaseDocument
+                                                    |
+                                                    +── DRAFT
+                                                          |
+                                                          | explicit human
+                                                          | finalization
+                                                          v
+                                                      FINALIZED
+```
+
+Expansion follows two rules:
+
+1. Future authoring terminates at the existing explicit publication boundary;
+   it does not mutate published versions.
+2. Future extraction terminates at a reviewed Generation Value; it does not
+   write directly into the template or renderer.
+
 ## 4. Document Lifecycle
 
 ### 4.1 Template creation and publication
 
-A system-provided or user-created Document Template receives a stable identity.
-Reusable DOCX content is prepared with controlled placeholders. Publication
+A user-created Document Template receives a stable identity. Phase 5 accepts
+reusable DOCX content prepared with controlled ASCII placeholders. Publication
 identifies those placeholders, requires matching structured field definitions,
-and creates an immutable Template Version.
+and creates an immutable Template Version. A template with no placeholders and
+an empty field contract is valid.
 
 Existing visual documents that use blank lines, `XXXX`, formatting, or prose
 annotations are not deterministic template contracts. They must be normalized
-before publication.
+before publication. In Phase 5 that normalization happens outside the
+application. The final authoring product imports those signals as suggestions,
+lets a user normalize them in the browser, and publishes only the approved
+result.
 
-Editable template working drafts are a possible future capability and are not
-part of the MVP.
+Phase 5 public creation produces `CUSTOM` templates. `PRESET` authoring is
+deferred until administrator identity and authorization exist. The final
+browser-authoring workflow uses editable Template Drafts, but that draft
+lifecycle is not implemented in the current vertical slice.
 
 ### 4.2 Template versioning
 
@@ -238,15 +399,23 @@ values may also participate. After validation, deterministic rendering produces
 a DOCX draft, which is stored as a generated Case Document with generation
 traceability.
 
+The user may correct a resolved value for this generation without silently
+changing the underlying Case. Future evidence assistance may present candidate
+values from existing Case Documents or files uploaded through the generation
+journey. Such uploads should normally become Case Documents so provenance can
+use a stable source identity.
+
 ### 4.4 Human review and finalization
 
 The generated output remains a draft until a human explicitly finalizes the
 reviewed result. Finalization records a workflow decision; it does not mean the
 application independently verifies legal correctness.
 
-The exact draft/finalized state representation, allowed transitions, and
-editing experience remain open. Browser-based Word editing and replacement of
-a draft with a separately reviewed document are deferred from the MVP.
+The exact draft/finalized state representation and allowed transitions belong
+to the generation tickets. Browser-based editing of a generated draft is part
+of the final product direction but is deferred from the current Phase 5
+vertical slice. Editing a Case-specific output never mutates its reusable
+Template Version.
 
 ### 4.5 Historical integrity
 
@@ -265,7 +434,7 @@ A template represents reusable legal-document structure, not one Case's final
 work product. Its stable identity provides continuity, while immutable published
 versions preserve the exact reusable content used for generation.
 
-The MVP uses:
+The Phase 5 deterministic vertical slice uses:
 
 - DOCX template sources;
 - one intended generated format, DOCX;
@@ -275,14 +444,24 @@ The MVP uses:
   explicit user input;
 - basic replacement rendering that preserves supported formatting.
 
-Controlled placeholders form the runtime contract. Publication scans the DOCX,
-presents detected fields, and requires the field definitions to match before
-the version is published. Detailed parsing and supported document structures
-belong to the renderer decision rather than the domain model.
+Controlled ASCII placeholders form the Phase 5 runtime contract. Publication
+scans the DOCX, presents detected fields, and requires the field definitions to
+match before the version is published. Field keys are machine-oriented while
+display labels may be localized. Detailed parsing and supported document
+structures belong to the renderer decision rather than the domain model.
 
-The MVP does not use arbitrary expressions, conditions, formulas, repeating
+The relational field contract is independent of the eventual Word marker
+technology. A future editor may publish tagged content controls or another
+explicit structured marker. Older published textual-placeholder versions must
+remain renderable; a second rendering strategy is introduced only when a real
+second representation exists.
+
+The Phase 5 deterministic vertical slice does not use arbitrary expressions,
+conditions, formulas, repeating
 collections, or AI discovery as the runtime template contract. Word content
-controls, merge fields, and bookmarks are not the initial marker mechanism.
+controls, merge fields, and bookmarks are not the Phase 5 marker mechanism,
+but structured content controls remain a candidate for future browser
+authoring.
 
 Template definition, value acquisition, and rendering remain separate:
 
@@ -292,7 +471,8 @@ Value acquisition   -> supplies resolved input values
 Rendering           -> applies those values deterministically to DOCX
 ```
 
-The MVP does not introduce a global semantic-field catalog. Unambiguous Case or
+The Phase 5 deterministic vertical slice does not introduce a global
+semantic-field catalog. Unambiguous Case or
 system bindings may supply deterministic defaults, while context-dependent
 values may remain local user-input fields. A narrowly governed semantic catalog
 for precise evidence-derived facts is only a future decision gate before
@@ -300,14 +480,48 @@ AI-assisted extraction.
 
 ## 6. Generation Workflow
 
-### 6.1 Inputs
+### 6.1 Current Phase 5 deterministic vertical-slice workflow
+
+```text
+Publish controlled CUSTOM DOCX template
+        -> select Case and exact Template Version
+        -> resolve Case/system defaults
+        -> collect and review explicit user input or corrections
+        -> validate required Generation Values
+        -> render deterministic DOCX
+        -> persist generated CaseDocument and generation traceability
+        -> download and review draft
+        -> explicitly finalize
+```
+
+### 6.2 Eventual product workflow
+
+```text
+Upload Word or create blank TemplateDraft
+        -> suggest and review variable regions
+        -> edit boilerplate and structured placeholders in browser
+        -> explicitly publish immutable Template Version
+        -> select Case and version
+        -> acquire candidates from Case/system/manual/evidence sources
+        -> show conflicts and evidence provenance
+        -> human approves final Generation Values
+        -> render deterministically
+        -> edit Case-specific draft in browser without changing the template
+        -> explicitly finalize
+```
+
+### 6.3 Inputs
 
 - a Case;
 - one exact published Template Version;
 - resolved values from the Case and defined system sources;
 - explicit user-provided values required by the template contract.
 
-### 6.2 Process
+Future evidence suggestions are candidate inputs, not automatically approved
+values. When Case data, evidence, and manual entry disagree, the application
+must show the alternatives rather than enforce a hidden source precedence.
+
+### 6.4 Process
 
 ```text
 Load Case and Template Version
@@ -328,13 +542,13 @@ Persist Case Document metadata and generation traceability
 Return generated draft for human review
 ```
 
-### 6.3 Output
+### 6.5 Output
 
 The output is a DOCX draft associated with the Case, represented in the Case's
 document collection as generated output and linked conceptually to its exact
 Template Version through generation traceability.
 
-### 6.4 Responsibility and failure boundaries
+### 6.6 Responsibility and failure boundaries
 
 The **application workflow** coordinates Case and template loading, value
 resolution, validation, rendering, storage, metadata persistence, and
@@ -390,7 +604,22 @@ rendering, but provider-specific concerns remain outside its business model.
 ## 8. Future Evolution
 
 The following extensions preserve the long-term product goal but do not expand
-the deterministic MVP.
+the Phase 5 deterministic vertical slice.
+
+### Browser template authoring
+
+The final authoring workflow supports Word upload or blank-draft creation,
+browser editing of boilerplate and placeholders, advisory variable-region
+suggestions, and explicit immutable publication. Updating reusable content
+forks a mutable draft from a published version; editor saves do not create
+versions.
+
+The editor is infrastructure rather than the owner of template identity,
+publication rules, or field meaning. Select it through an integration and
+licensing spike that verifies Chinese DOCX fidelity, legacy-DOC normalization,
+tagged placeholders, save callbacks, side-panel integration, security, and
+deployment cost. Do not finalize draft or suggestion persistence before that
+spike.
 
 ### Evidence text extraction
 
@@ -420,7 +649,8 @@ replace the deterministic, human-approved runtime field contract.
 
 DOCX-to-PDF conversion, more advanced template syntax, and alternative marker
 mechanisms may be evaluated after the basic DOCX workflow works end to end.
-They are deferred because the MVP needs a small, testable generation contract
+They are deferred because the Phase 5 vertical slice needs a small, testable
+generation contract
 before supporting more formats or expressive template behavior.
 
 ## 9. Open Questions
@@ -466,8 +696,8 @@ field discovery should be arbitrary.
 - If future output formats are introduced, how do they relate to the stable
   Document Template, its versions, and generated output?
 
-The MVP decision remains one DOCX source and DOCX output per published Template
-Version. This question does not expand the current scope.
+The Phase 5 decision remains one DOCX source and DOCX output per published
+Template Version. This question does not expand the current scope.
 
 ### Production governance
 
