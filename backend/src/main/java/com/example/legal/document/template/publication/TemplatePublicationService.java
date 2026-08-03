@@ -109,7 +109,7 @@ public class TemplatePublicationService {
 
     public TemplatePage<TemplateSummary> listTemplates(int page, int size) {
         PageRequest request = pageRequest(page, size);
-        Page<TemplateSummary> result = templateRepository.findAllByOrderByCreatedAtDesc(request)
+        Page<TemplateSummary> result = templateRepository.findAllByOrderByCreatedAtDescIdDesc(request)
                 .map(this::toSummary);
         return TemplatePage.from(result);
     }

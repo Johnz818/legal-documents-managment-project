@@ -94,6 +94,12 @@ The application presents both for review, requires every canonical marker to
 retain its own key, normalizes the Chinese markers, and publishes the next
 immutable version after the same single confirmation.
 
+Phase 5 fails closed when a marker appears in a known unsupported Word location,
+including a content control, and when a DOCX contains embedded files, ActiveX,
+macros, or external relationships. The API identifies the unsupported location
+or feature so the user can remove it and submit a controlled template. Ordinary
+embedded images such as a law-firm logo remain allowed.
+
 #### Final template-authoring target
 
 The intended product is a browser-based legal-template authoring and versioning

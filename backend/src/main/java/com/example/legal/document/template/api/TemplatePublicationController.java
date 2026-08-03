@@ -4,6 +4,7 @@ import com.example.legal.document.template.inspection.TemplateInspectionErrorCod
 import com.example.legal.document.template.inspection.TemplateInspectionException;
 import com.example.legal.document.template.publication.PublishedTemplateVersion;
 import com.example.legal.document.template.publication.TemplateDownload;
+import com.example.legal.document.template.publication.TemplateFieldDefinition;
 import com.example.legal.document.template.publication.TemplatePage;
 import com.example.legal.document.template.publication.TemplatePublicationCommand;
 import com.example.legal.document.template.publication.TemplatePublicationErrorCode;
@@ -28,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/document-templates")
@@ -51,7 +53,7 @@ public class TemplatePublicationController {
     public ResponseEntity<PublishedTemplateVersion> publishVersion(
             @PathVariable Long templateId,
             @RequestPart("file") MultipartFile file,
-            @RequestPart("publication") TemplatePublicationRequest request
+            @RequestPart("publication") TemplateVersionPublicationRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(service.publishVersion(templateId, command(file, request)));
@@ -100,24 +102,51 @@ public class TemplatePublicationController {
 
     private TemplatePublicationCommand command(MultipartFile file, TemplatePublicationRequest request) {
         if (request == null) {
-            throw new TemplatePublicationException(
-                    TemplatePublicationErrorCode.TEMPLATE_PUBLICATION_INVALID,
-                    HttpStatus.BAD_REQUEST,
-                    "Publication request is invalid"
-            );
+            throw invalidPublicationRequest();
         }
+        return command(file, request.name(), request.description(), request.toFields());
+    }
+
+    private TemplatePublicationCommand command(
+            MultipartFile file,
+            TemplateVersionPublicationRequest request
+    ) {
+        if (request == null) {
+            throw invalidPublicationRequest();
+        }
+        return command(file, null, null, request.toFields());
+    }
+
+    private TemplatePublicationCommand command(
+            MultipartFile file,
+            String name,
+            String description,
+            List<TemplateFieldDefinition> fields
+    ) {
         try {
             return new TemplatePublicationCommand(
-                    request.name(), request.description(), file.getOriginalFilename(),
-                    file.getContentType(), file.getBytes(), request.toFields()
+                    name, description, file.getOriginalFilename(),
+                    file.getContentType(), file.getBytes(), fields
             );
         } catch (IOException exception) {
-            throw new TemplateInspectionException(
-                    TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSUPPORTED,
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Template content could not be read",
-                    exception
-            );
+            throw unreadableTemplate(exception);
         }
+    }
+
+    private TemplatePublicationException invalidPublicationRequest() {
+        return new TemplatePublicationException(
+                TemplatePublicationErrorCode.TEMPLATE_PUBLICATION_INVALID,
+                HttpStatus.BAD_REQUEST,
+                "Publication request is invalid"
+        );
+    }
+
+    private TemplateInspectionException unreadableTemplate(IOException exception) {
+        return new TemplateInspectionException(
+                TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSUPPORTED,
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "Template content could not be read",
+                exception
+        );
     }
 }

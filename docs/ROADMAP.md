@@ -269,7 +269,9 @@ Later tickets have explicit decision gates:
   inspection, mixed-input and human-reviewed many-to-one grouping, canonical
   field-key grammar, localized display names, exact Case/system source/type
   compatibility, finite location validation, and single-confirmation
-  normalization/publication;
+  normalization/publication. Known content-control marker mistakes and
+  embedded or active package content fail closed with controlled error details,
+  while ordinary images remain allowed;
 - before G3 is accepted, verify docx4j rendering, supported DOCX constructs,
   Chinese visual fidelity, and formatting preservation through representative
   safe fixtures;

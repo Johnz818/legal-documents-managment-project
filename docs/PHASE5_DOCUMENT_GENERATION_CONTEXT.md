@@ -598,6 +598,13 @@ Confirmed G2 boundaries are:
   docx4j text-box representations are checked for marker mistakes and produce
   location-specific errors; G2 makes no exhaustive-discovery promise for other
   OOXML parts;
+- markers inside content controls fail closed with `CONTENT_CONTROL` location
+  details; embedded files, ActiveX, macros, and external relationships are
+  rejected with controlled feature details while ordinary images remain
+  allowed;
+- Template `name` and `description` belong to the stable identity and are not
+  accepted by later-version publication; template listing uses the stable
+  `created_at DESC, id DESC` order;
 - Case/system source keys require the exact `TEXT` or `DATE` compatibility in
   D-029, and publication performs no implicit type conversion;
 - publication rescans the original upload, normalizes the confirmed groups,

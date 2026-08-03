@@ -50,13 +50,13 @@ class TemplatePackagePreflightTest {
     @Test
     void rejectsUnsafeEntryNamesAndDuplicateNames() {
         assertFailure(zip(Map.of(
-                "[Content_Types].xml", "types",
+                "[Content_Types].xml", contentTypes(),
                 "_rels/.rels", relationships(false),
                 "word/document.xml", "document",
                 "../outside.xml", "unsafe"
         )), TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSAFE);
         assertFailure(zip(Map.of(
-                "[Content_Types].xml", "types",
+                "[Content_Types].xml", contentTypes(),
                 "_rels/.rels", relationships(false),
                 "word/document.xml", "document",
                 "word\\unsafe.xml", "unsafe"
@@ -68,15 +68,74 @@ class TemplatePackagePreflightTest {
 
     @Test
     void rejectsExternalRelationshipsAndMissingCoreParts() {
-        assertFailure(zip(Map.of(
-                "[Content_Types].xml", "types",
+        byte[] externalRelationship = zip(Map.of(
+                "[Content_Types].xml", contentTypes(),
                 "_rels/.rels", relationships(true),
                 "word/document.xml", "document"
-        )), TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSAFE);
+        ));
+        assertThatThrownBy(() -> preflight().validate(externalRelationship))
+                .isInstanceOfSatisfying(TemplateInspectionException.class, exception -> {
+                    assertThat(exception.getCode())
+                            .isEqualTo(TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSAFE);
+                    assertThat(exception.getDetails())
+                            .containsEntry("feature", "EXTERNAL_RELATIONSHIP");
+                });
         assertFailure(zip(Map.of(
-                "[Content_Types].xml", "types",
+                "[Content_Types].xml", contentTypes(),
                 "_rels/.rels", relationships(false)
         )), TemplateInspectionErrorCode.TEMPLATE_FILE_NOT_DOCX);
+    }
+
+    @Test
+    void rejectsEmbeddedAndActiveContentButPermitsOrdinaryImages() {
+        assertPackageFeatureFailure(
+                "word/embeddings/embedded.xlsx",
+                TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSUPPORTED,
+                "EMBEDDED_OBJECT"
+        );
+        assertPackageFeatureFailure(
+                "word/activeX/activeX1.bin",
+                TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSAFE,
+                "ACTIVEX"
+        );
+        assertPackageFeatureFailure(
+                "word/vbaData.xml",
+                TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSAFE,
+                "MACRO"
+        );
+        assertThatCode(() -> preflight().validate(packageWith("word/media/logo.png")))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void rejectsDeniedSemanticsAtUnconventionalPackagePaths() {
+        assertSemanticFeatureFailure(
+                relationships(false, "http://schemas.microsoft.com/office/2006/relationships/vbaProject"),
+                contentTypes(),
+                TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSAFE,
+                "MACRO"
+        );
+        assertSemanticFeatureFailure(
+                relationships(false, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/package"),
+                contentTypes(),
+                TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSUPPORTED,
+                "EMBEDDED_OBJECT"
+        );
+        assertSemanticFeatureFailure(
+                relationships(false),
+                contentTypes("application/vnd.ms-office.activeX"),
+                TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSAFE,
+                "ACTIVEX"
+        );
+    }
+
+    @Test
+    void permitsUnknownInternalRelationshipSemanticsDuringPreflight() {
+        assertThatCode(() -> preflight().validate(zip(Map.of(
+                "[Content_Types].xml", contentTypes(),
+                "_rels/.rels", relationships(false, "urn:example:internal-extension"),
+                "word/document.xml", "document"
+        )))).doesNotThrowAnyException();
     }
 
     @Test
@@ -87,7 +146,7 @@ class TemplatePackagePreflightTest {
         ));
 
         byte[] validShape = zip(new LinkedHashMap<>(Map.of(
-                "[Content_Types].xml", "12345",
+                "[Content_Types].xml", contentTypes(),
                 "_rels/.rels", relationships(false),
                 "word/document.xml", "document"
         )));
@@ -125,6 +184,46 @@ class TemplatePackagePreflightTest {
                                 .isEqualTo(TemplateInspectionErrorCode.TEMPLATE_PACKAGE_UNSAFE));
     }
 
+    private void assertPackageFeatureFailure(
+            String entryName,
+            TemplateInspectionErrorCode expectedCode,
+            String expectedFeature
+    ) {
+        assertThatThrownBy(() -> preflight().validate(packageWith(entryName)))
+                .isInstanceOfSatisfying(TemplateInspectionException.class, exception -> {
+                    assertThat(exception.getCode()).isEqualTo(expectedCode);
+                    assertThat(exception.getDetails()).containsEntry("feature", expectedFeature);
+                });
+    }
+
+    private void assertSemanticFeatureFailure(
+            String relationshipXml,
+            String contentTypeXml,
+            TemplateInspectionErrorCode expectedCode,
+            String expectedFeature
+    ) {
+        byte[] content = zip(Map.of(
+                "[Content_Types].xml", contentTypeXml,
+                "_rels/.rels", relationshipXml,
+                "word/document.xml", "document",
+                "word/assets/renamed.dat", "content"
+        ));
+        assertThatThrownBy(() -> preflight().validate(content))
+                .isInstanceOfSatisfying(TemplateInspectionException.class, exception -> {
+                    assertThat(exception.getCode()).isEqualTo(expectedCode);
+                    assertThat(exception.getDetails()).containsEntry("feature", expectedFeature);
+                });
+    }
+
+    private byte[] packageWith(String additionalEntry) {
+        return zip(Map.of(
+                "[Content_Types].xml", contentTypes(),
+                "_rels/.rels", relationships(false),
+                "word/document.xml", "document",
+                additionalEntry, "content"
+        ));
+    }
+
     private byte[] duplicateEntryZip() {
         try {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -160,12 +259,34 @@ class TemplatePackagePreflightTest {
     }
 
     private String relationships(boolean external) {
+        return relationships(external, "urn:test:relationship");
+    }
+
+    private String relationships(boolean external, String type) {
         String targetMode = external ? " TargetMode=\"External\"" : "";
         return """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-                  <Relationship Id="rId1" Type="test" Target="word/document.xml"%s/>
+                  <Relationship Id="rId1" Type="%s" Target="word/assets/renamed.dat"%s/>
                 </Relationships>
-                """.formatted(targetMode);
+                """.formatted(type, targetMode);
+    }
+
+    private String contentTypes(String... additionalContentTypes) {
+        StringBuilder declarations = new StringBuilder();
+        for (int index = 0; index < additionalContentTypes.length; index++) {
+            declarations.append("<Override PartName=\"/word/assets/part")
+                    .append(index)
+                    .append(".dat\" ContentType=\"")
+                    .append(additionalContentTypes[index])
+                    .append("\"/>");
+        }
+        return """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                  <Default Extension="xml" ContentType="application/xml"/>
+                  %s
+                </Types>
+                """.formatted(declarations);
     }
 }

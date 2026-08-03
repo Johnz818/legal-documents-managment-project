@@ -7,13 +7,23 @@ import com.example.legal.document.template.inspection.TemplateMarkerKind;
 import com.example.legal.document.template.publication.TemplateFieldDefinition;
 import com.example.legal.document.template.publication.TemplatePublicationErrorCode;
 import com.example.legal.document.template.publication.TemplatePublicationException;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
 public record TemplatePublicationRequest(String name, String description, List<FieldRequest> fields) {
 
+    @JsonAnySetter
+    void rejectUnknownProperty(String name, Object value) {
+        throw new IllegalArgumentException("Unknown template publication property: " + name);
+    }
+
     public List<TemplateFieldDefinition> toFields() {
+        return toFields(fields);
+    }
+
+    static List<TemplateFieldDefinition> toFields(List<FieldRequest> fields) {
         if (fields == null) {
             return List.of();
         }
@@ -33,6 +43,11 @@ public record TemplatePublicationRequest(String name, String description, List<F
             String sourceKey,
             List<MarkerRequest> markers
     ) {
+        @JsonAnySetter
+        void rejectUnknownProperty(String name, Object value) {
+            throw new IllegalArgumentException("Unknown template field property: " + name);
+        }
+
         TemplateFieldDefinition toDefinition() {
             if (markers != null && markers.stream().anyMatch(java.util.Objects::isNull)) {
                 throw invalid();
@@ -47,6 +62,11 @@ public record TemplatePublicationRequest(String name, String description, List<F
     }
 
     public record MarkerRequest(TemplateMarkerKind kind, String value) {
+        @JsonAnySetter
+        void rejectUnknownProperty(String name, Object unknownValue) {
+            throw new IllegalArgumentException("Unknown template marker property: " + name);
+        }
+
         TemplateMarker toMarker() {
             if (kind == null || value == null) {
                 throw invalid();

@@ -6,6 +6,7 @@ import com.example.legal.document.template.publication.TemplatePublicationExcept
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -42,6 +43,17 @@ public class TemplateApiExceptionHandler {
         if (!exception.getDetails().isEmpty()) {
             problem.setProperty("details", exception.getDetails());
         }
+        return problem;
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ProblemDetail handleUnreadablePublicationRequest() {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "Publication request is invalid"
+        );
+        problem.setTitle("Document template publication failed");
+        problem.setProperty("code", "TEMPLATE_PUBLICATION_INVALID");
         return problem;
     }
 
