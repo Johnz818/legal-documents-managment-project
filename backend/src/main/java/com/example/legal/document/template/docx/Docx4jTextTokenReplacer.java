@@ -88,13 +88,13 @@ final class Docx4jTextTokenReplacer {
         String first = value(nodes.get(firstIndex));
         String last = value(nodes.get(lastIndex));
         String suffix = last.substring(lastOffset);
-        nodes.get(firstIndex).setValue(first.substring(0, firstOffset) + replacement.value()
+        setValue(nodes.get(firstIndex), first.substring(0, firstOffset) + replacement.value()
                 + (firstIndex == lastIndex ? suffix : ""));
         for (int index = firstIndex + 1; index < lastIndex; index++) {
-            nodes.get(index).setValue("");
+            setValue(nodes.get(index), "");
         }
         if (lastIndex > firstIndex) {
-            nodes.get(lastIndex).setValue(suffix);
+            setValue(nodes.get(lastIndex), suffix);
         }
     }
 
@@ -120,6 +120,17 @@ final class Docx4jTextTokenReplacer {
 
     private String value(Text text) {
         return text.getValue() == null ? "" : text.getValue();
+    }
+
+    private void setValue(Text text, String value) {
+        text.setValue(value);
+        text.setSpace(hasBoundaryWhitespace(value) ? "preserve" : null);
+    }
+
+    private boolean hasBoundaryWhitespace(String value) {
+        return !value.isEmpty()
+                && (Character.isWhitespace(value.charAt(0))
+                || Character.isWhitespace(value.charAt(value.length() - 1)));
     }
 
     @FunctionalInterface
