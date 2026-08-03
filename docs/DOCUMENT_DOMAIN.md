@@ -697,9 +697,15 @@ placeholders used in later-version candidates. It supports repeated and
 split-run markers in body and table paragraphs and requires explicit human
 grouping and field configuration. It inspects the finite unsupported locations
 defined by D-029 for marker mistakes rather than claiming exhaustive discovery
-across all OOXML parts. Alternative marker forms, legacy DOC conversion,
-semantic-similarity suggestions, and browser editing remain deferred. Exact
-HTTP error payload details remain an implementation-level G2 contract.
+across all OOXML parts. A marker inside a content control is rejected with its
+unsupported location rather than silently omitted. Package preflight rejects
+embedded files, ActiveX, macros, and external relationships while allowing
+ordinary images. Template `name` and `description` remain metadata of the stable
+Template identity; later-version publication accepts only the new immutable
+DOCX field contract and does not silently accept Template metadata. Alternative
+marker forms, legacy DOC conversion, semantic-similarity suggestions, and
+browser editing remain deferred. Exact HTTP error payload details remain an
+implementation-level G2 contract.
 
 ### Generation traceability and lifecycle
 

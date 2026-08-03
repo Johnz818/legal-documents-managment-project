@@ -7,6 +7,10 @@ import com.example.legal.document.template.inspection.TemplateMarkerKind;
 import org.docx4j.openpackaging.parts.WordprocessingML.HeaderPart;
 import org.docx4j.relationships.Relationship;
 import org.docx4j.wml.Hdr;
+import org.docx4j.wml.CTSdtContentRun;
+import org.docx4j.wml.SdtBlock;
+import org.docx4j.wml.SdtContentBlock;
+import org.docx4j.wml.SdtRun;
 import org.docx4j.wml.Tbl;
 import org.docx4j.wml.Tc;
 import org.docx4j.wml.Tr;
@@ -99,6 +103,76 @@ class Docx4jTemplateDocumentInspectorTest {
                     );
                     assertThat(exception.getDetails()).containsEntry("location", "HEADER");
                 });
+    }
+
+    @Test
+    void rejectsMarkersInsideContentControlsWithLocationDetails() {
+        byte[] document = SyntheticDocx.create(wordPackage ->
+                wordPackage.getMainDocumentPart().addObject(contentControl("{{案号}}"))
+        );
+
+        assertThatThrownBy(() -> inspector.inspect(document))
+                .isInstanceOfSatisfying(TemplateInspectionException.class, exception -> {
+                    assertThat(exception.getCode()).isEqualTo(
+                            TemplateInspectionErrorCode.TEMPLATE_MARKER_UNSUPPORTED_LOCATION
+                    );
+                    assertThat(exception.getDetails())
+                            .containsEntry("location", "CONTENT_CONTROL")
+                            .containsEntry("markerKind", "CHINESE")
+                            .containsEntry("markerValue", "案号");
+                });
+    }
+
+    @Test
+    void rejectsCanonicalMarkersInsideRunLevelContentControls() {
+        byte[] document = SyntheticDocx.create(wordPackage -> {
+            org.docx4j.wml.P paragraph = new org.docx4j.wml.P();
+            paragraph.getContent().add(runContentControl("{{case_number}}"));
+            wordPackage.getMainDocumentPart().addObject(paragraph);
+        });
+
+        assertThatThrownBy(() -> inspector.inspect(document))
+                .isInstanceOfSatisfying(TemplateInspectionException.class, exception -> {
+                    assertThat(exception.getCode()).isEqualTo(
+                            TemplateInspectionErrorCode.TEMPLATE_MARKER_UNSUPPORTED_LOCATION
+                    );
+                    assertThat(exception.getDetails())
+                            .containsEntry("location", "CONTENT_CONTROL")
+                            .containsEntry("markerKind", "CANONICAL")
+                            .containsEntry("markerValue", "case_number");
+                });
+    }
+
+    @Test
+    void acceptsAGenuineImageBearingDocx() {
+        byte[] document = SyntheticDocx.create(SyntheticDocx::addImageParagraph);
+
+        assertThat(inspector.inspect(document).markers()).isEmpty();
+    }
+
+    @Test
+    void permitsFixedBoilerplateInsideContentControls() {
+        byte[] document = SyntheticDocx.create(wordPackage ->
+                wordPackage.getMainDocumentPart().addObject(contentControl("固定正文"))
+        );
+
+        assertThat(inspector.inspect(document).markers()).isEmpty();
+    }
+
+    private static SdtBlock contentControl(String text) {
+        SdtContentBlock content = new SdtContentBlock();
+        content.getContent().add(SyntheticDocx.paragraph(text));
+        SdtBlock block = new SdtBlock();
+        block.setSdtContent(content);
+        return block;
+    }
+
+    private static SdtRun runContentControl(String text) {
+        CTSdtContentRun content = new CTSdtContentRun();
+        content.getContent().add(SyntheticDocx.paragraph(text).getContent().getFirst());
+        SdtRun run = new SdtRun();
+        run.setSdtContent(content);
+        return run;
     }
 
     private static Tbl tableWithCell(Object content) {

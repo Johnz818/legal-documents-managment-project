@@ -903,6 +903,22 @@ and binary storage have completed. Template and version listing are bounded and
 paginated; nested versions are addressed by template-local version number; API
 contracts do not expose storage keys or persistence entities.
 
+Known unsupported content fails closed rather than disappearing from the
+publication contract. A controlled marker inside a content control returns a
+location-specific validation error. Package preflight rejects embedded files,
+ActiveX, macro content, and external relationships with a controlled feature
+identifier, while ordinary images remain permitted. Detection uses a targeted
+semantic denylist of exact OOXML relationship and content types plus
+conventional package paths as defense in depth; it is not a general OOXML
+allowlist, and an otherwise unknown internal relationship is not rejected only
+because G2 does not recognize it. This bounded package policy does not replace
+future malware scanning or decide later document-governance policy for digital
+signatures, tracked changes, comments, hidden text, or metadata. Template `name` and
+`description` belong to the stable Template identity and are accepted only when
+that identity is created; later-version publication accepts the version field
+contract and rejects unexpected Template metadata. Template pagination uses
+`created_at DESC, id DESC` so equal timestamps cannot produce unstable pages.
+
 ---
 
 ## Future considerations (TODO)

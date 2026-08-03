@@ -58,6 +58,7 @@ public final class Docx4jTemplateDocumentInspector implements TemplateDocumentIn
             );
             LinkedHashMap<TemplateMarker, Integer> occurrences = new LinkedHashMap<>();
             scanBlocks(wordPackage.getMainDocumentPart().getContent(), occurrences);
+            guardContentControls(wordPackage.getMainDocumentPart().getJaxbElement());
             guardTextBoxes(wordPackage.getMainDocumentPart().getJaxbElement());
             guardUnsupportedParts(wordPackage);
             return new TemplateInspection(occurrences.entrySet().stream()
@@ -160,8 +161,11 @@ public final class Docx4jTemplateDocumentInspector implements TemplateDocumentIn
     private void guardUnsupportedParts(WordprocessingMLPackage wordPackage) {
         for (Part part : wordPackage.getParts().getParts().values()) {
             String location = unsupportedLocation(part);
-            if (location != null && part instanceof JaxbXmlPart<?> xmlPart) {
-                guardParagraphs(xmlPart.getJaxbElement(), location);
+            if (part instanceof JaxbXmlPart<?> xmlPart) {
+                guardContentControls(xmlPart.getJaxbElement());
+                if (location != null) {
+                    guardParagraphs(xmlPart.getJaxbElement(), location);
+                }
             }
         }
     }
@@ -195,27 +199,72 @@ public final class Docx4jTemplateDocumentInspector implements TemplateDocumentIn
         });
     }
 
+    private void guardContentControls(Object root) {
+        visit(root, identitySet(), value -> {
+            if (value instanceof SdtElement contentControl) {
+                rejectMarkers(contentControlText(contentControl), "CONTENT_CONTROL");
+                return false;
+            }
+            return true;
+        });
+    }
+
+    private String contentControlText(Object root) {
+        List<String> textNodes = new ArrayList<>();
+        collectContentControlTextNodes(root, textNodes, identitySet());
+        return String.join("", textNodes);
+    }
+
+    private void collectContentControlTextNodes(Object wrapped, List<String> result, Set<Object> visited) {
+        Object value = XmlUtils.unwrap(wrapped);
+        if (value == null || !visited.add(value)) {
+            return;
+        }
+        if (value instanceof Text text) {
+            result.add(text.getValue());
+            return;
+        }
+        if (value instanceof Drawing || value instanceof Pict || value instanceof CTTxbxContent) {
+            return;
+        }
+        List<Object> children = TraversalUtil.getChildrenImpl(value);
+        if (children != null) {
+            for (Object child : children) {
+                collectContentControlTextNodes(child, result, visited);
+            }
+        }
+    }
+
     private void guardParagraphs(Object root, String location) {
         visit(root, identitySet(), value -> {
             if (value instanceof P paragraph) {
-                List<TemplateMarker> markers = markerParser.parse(paragraphText(paragraph), location);
-                if (!markers.isEmpty()) {
-                    TemplateMarker marker = markers.getFirst();
-                    throw new TemplateInspectionException(
-                            TemplateInspectionErrorCode.TEMPLATE_MARKER_UNSUPPORTED_LOCATION,
-                            HttpStatus.UNPROCESSABLE_ENTITY,
-                            "Template markers are not supported in " + location.toLowerCase(),
-                            Map.of(
-                                    "location", location,
-                                    "markerKind", marker.kind().name(),
-                                    "markerValue", marker.value()
-                            )
-                    );
-                }
+                rejectMarkers(paragraph, location);
                 return false;
             }
             return !(value instanceof SdtElement);
         });
+    }
+
+    private void rejectMarkers(P paragraph, String location) {
+        rejectMarkers(paragraphText(paragraph), location);
+    }
+
+    private void rejectMarkers(String text, String location) {
+        List<TemplateMarker> markers = markerParser.parse(text, location);
+        if (!markers.isEmpty()) {
+            TemplateMarker marker = markers.getFirst();
+            throw new TemplateInspectionException(
+                    TemplateInspectionErrorCode.TEMPLATE_MARKER_UNSUPPORTED_LOCATION,
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Template markers are not supported in "
+                            + location.toLowerCase().replace('_', ' '),
+                    Map.of(
+                            "location", location,
+                            "markerKind", marker.kind().name(),
+                            "markerValue", marker.value()
+                    )
+            );
+        }
     }
 
     private void visit(Object wrapped, Set<Object> visited, NodeVisitor visitor) {

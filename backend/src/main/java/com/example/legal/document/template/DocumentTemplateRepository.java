@@ -17,7 +17,7 @@ public interface DocumentTemplateRepository extends Repository<DocumentTemplateE
 
     Optional<DocumentTemplateEntity> findById(Long id);
 
-    Page<DocumentTemplateEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    Page<DocumentTemplateEntity> findAllByOrderByCreatedAtDescIdDesc(Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select template from DocumentTemplateEntity template where template.id = :id")

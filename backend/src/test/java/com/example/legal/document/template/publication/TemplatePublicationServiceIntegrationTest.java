@@ -122,6 +122,23 @@ class TemplatePublicationServiceIntegrationTest {
                 .isInstanceOf(TemplatePublicationException.class);
     }
 
+    @Test
+    void ordersTemplatesDeterministicallyWhenCreationTimestampsTie() {
+        PublishedTemplateVersion first = service.create(command("模板甲", "固定正文", List.of()));
+        PublishedTemplateVersion second = service.create(command("模板乙", "固定正文", List.of()));
+        PublishedTemplateVersion third = service.create(command("模板丙", "固定正文", List.of()));
+        jdbcTemplate.update(
+                "UPDATE document_templates SET created_at = '2026-08-03 00:00:00.000000'"
+        );
+
+        assertThat(service.listTemplates(0, 2).items())
+                .extracting(TemplateSummary::id)
+                .containsExactly(third.templateId(), second.templateId());
+        assertThat(service.listTemplates(1, 2).items())
+                .extracting(TemplateSummary::id)
+                .containsExactly(first.templateId());
+    }
+
     private TemplatePublicationCommand command(
             String name,
             String paragraph,

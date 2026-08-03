@@ -53,7 +53,7 @@ class TemplatePublicationControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.versionNumber").value(1));
         mockMvc.perform(multipart("/api/document-templates/7/versions")
-                        .file(file()).file(publication()))
+                        .file(file()).file(versionPublication()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.versionNumber").value(2));
     }
@@ -117,6 +117,49 @@ class TemplatePublicationControllerTest {
                 .andExpect(jsonPath("$.code").value("TEMPLATE_PUBLICATION_INVALID"));
     }
 
+    @Test
+    void rejectsTemplateMetadataOnLaterVersionPublication() throws Exception {
+        mockMvc.perform(multipart("/api/document-templates/7/versions")
+                        .file(file()).file(publication()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_PUBLICATION_INVALID"));
+    }
+
+    @Test
+    void rejectsUnknownMetadataOnTemplateCreation() throws Exception {
+        MockMultipartFile invalidPublication = new MockMultipartFile(
+                "publication", "publication.json", "application/json",
+                "{\"name\":\"函\",\"descripton\":\"拼写错误\",\"fields\":[]}".getBytes()
+        );
+
+        mockMvc.perform(multipart("/api/document-templates")
+                        .file(file()).file(invalidPublication))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_PUBLICATION_INVALID"));
+    }
+
+    @Test
+    void rejectsUnknownNestedFieldAndMarkerProperties() throws Exception {
+        assertInvalidPublication("""
+                {"name":"函","fields":[{"fieldKey":"case_number","descripton":"拼写错误"}]}
+                """);
+        assertInvalidPublication("""
+                {"name":"函","fields":[{"fieldKey":"case_number","markers":[
+                  {"kind":"CANONICAL","value":"case_number","vale":"拼写错误"}
+                ]}]}
+                """);
+    }
+
+    private void assertInvalidPublication(String json) throws Exception {
+        MockMultipartFile invalidPublication = new MockMultipartFile(
+                "publication", "publication.json", "application/json", json.getBytes()
+        );
+        mockMvc.perform(multipart("/api/document-templates")
+                        .file(file()).file(invalidPublication))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_PUBLICATION_INVALID"));
+    }
+
     private MockMultipartFile file() {
         return new MockMultipartFile("file", "template.docx", "application/test", new byte[]{1});
     }
@@ -125,6 +168,13 @@ class TemplatePublicationControllerTest {
         return new MockMultipartFile(
                 "publication", "publication.json", "application/json",
                 "{\"name\":\"函\",\"fields\":[]}".getBytes()
+        );
+    }
+
+    private MockMultipartFile versionPublication() {
+        return new MockMultipartFile(
+                "publication", "publication.json", "application/json",
+                "{\"fields\":[]}".getBytes()
         );
     }
 
