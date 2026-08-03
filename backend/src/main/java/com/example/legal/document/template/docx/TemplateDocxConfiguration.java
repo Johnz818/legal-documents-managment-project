@@ -1,5 +1,6 @@
 package com.example.legal.document.template.docx;
 
+import com.example.legal.document.generation.TemplateDocumentRenderer;
 import com.example.legal.document.template.inspection.TemplateDocumentInspector;
 import com.example.legal.document.template.publication.TemplateDocumentNormalizer;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,5 +43,10 @@ public class TemplateDocxConfiguration {
     @Bean
     TemplateDocumentNormalizer templateDocumentNormalizer(TemplatePackagePreflight preflight) {
         return new Docx4jTemplateDocumentNormalizer(preflight);
+    }
+
+    @Bean
+    TemplateDocumentRenderer templateDocumentRenderer(TemplateDocumentInspector inspector) {
+        return new Docx4jTemplateDocumentRenderer(inspector);
     }
 }
