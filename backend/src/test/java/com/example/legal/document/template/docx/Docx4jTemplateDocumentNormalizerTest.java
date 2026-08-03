@@ -3,6 +3,9 @@ package com.example.legal.document.template.docx;
 import com.example.legal.document.template.inspection.TemplateMarker;
 import com.example.legal.document.template.inspection.TemplateMarkerKind;
 import org.docx4j.openpackaging.packages.WordprocessingMLPackage;
+import org.docx4j.wml.Tbl;
+import org.docx4j.wml.Tc;
+import org.docx4j.wml.Tr;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -48,5 +51,34 @@ class Docx4jTemplateDocumentNormalizerTest {
 
         assertThat(result).isNotEmpty();
         assertThat(inspector.inspect(result).markers()).isEmpty();
+    }
+
+    @Test
+    void preservesTableAndNestedTableTraversalDuringNormalization() {
+        byte[] source = SyntheticDocx.create(wordPackage -> {
+            Tbl outer = tableWithCell(SyntheticDocx.paragraph("{{案号}}"));
+            Tc outerCell = (Tc) ((Tr) outer.getContent().getFirst()).getContent().getFirst();
+            outerCell.getContent().add(tableWithCell(SyntheticDocx.paragraph("{{法院}}")));
+            wordPackage.getMainDocumentPart().addObject(outer);
+        });
+
+        byte[] result = normalizer.normalize(source, Map.of(
+                new TemplateMarker(TemplateMarkerKind.CHINESE, "案号"), "case_number",
+                new TemplateMarker(TemplateMarkerKind.CHINESE, "法院"), "court_name"
+        ));
+
+        assertThat(inspector.inspect(result).markers())
+                .extracting(marker -> marker.value())
+                .containsExactly("case_number", "court_name");
+    }
+
+    private static Tbl tableWithCell(Object content) {
+        Tc cell = new Tc();
+        cell.getContent().add(content);
+        Tr row = new Tr();
+        row.getContent().add(cell);
+        Tbl table = new Tbl();
+        table.getContent().add(row);
+        return table;
     }
 }
