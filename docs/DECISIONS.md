@@ -338,7 +338,8 @@ browser editing, PDF conversion, OCR, or AI processing.
 
 ### D-019
 
-Status: Accepted; delivery scope clarified by D-028
+Status: Accepted; delivery scope clarified by D-028 and generation lifecycle
+superseded by D-030
 
 The initial template-generation model uses one DOCX source file per immutable
 template version. A template has one intended generated format in this phase:
@@ -359,10 +360,11 @@ records; it does not represent multiple output formats.
 authorize users, persist metadata, or access local-filesystem or S3-specific
 APIs.
 
-The first generation capability supports structured scalar placeholders, DOCX
-draft output, and explicit human finalization. It does not support arbitrary
-expressions, conditions, repeating collections, browser-based Word editing, or
-automatic finalization.
+The first generation capability supports structured scalar placeholders and
+completed DOCX output from values reviewed before rendering. D-030 removes the
+previous separate Phase 5 draft/finalization step because no document-specific
+editing capability exists yet. It does not support arbitrary expressions,
+conditions, repeating collections, or browser-based Word editing.
 
 DOCX-to-PDF conversion, reviewed-document replacement, image support, OCR, and
 AI-assisted extraction are deferred. Future AI output is advisory and must
@@ -641,8 +643,10 @@ The following designs are rejected or deferred for the current milestones:
 
 At the time of this decision, the renderer library remained a decision gate and
 required an Apache POI/docx4j comparison using representative DOCX fixtures.
-D-029 records the resulting docx4j selection and remaining G3 verification
-gate. Later extraction milestones must separately evaluate PDFBox/Tika, Chinese
+D-029 records the resulting docx4j selection. G3 subsequently completed
+automated and representative manual verification of supported rendering,
+Chinese text, tables, images, and formatting preservation. Later extraction
+milestones must separately evaluate PDFBox/Tika, Chinese
 OCR options, background processing, and a provider-neutral structured AI
 extraction boundary.
 
@@ -685,7 +689,7 @@ placeholder parsing, or generation behavior.
 
 ### D-028
 
-Status: Accepted
+Status: Accepted; Phase 5 generation lifecycle refined by D-030
 
 Phase 5 is a production-shaped vertical slice and an expandable foundation,
 not the complete authoring and evidence-assisted product. The project will
@@ -744,7 +748,7 @@ editors, OCR, and AI.
 The delivery order is:
 
 1. finish Phase 5 controlled publication, Case/system/manual value resolution,
-   deterministic DOCX generation, human finalization, and frontend integration;
+   deterministic DOCX generation, successful traceability, and frontend integration;
 2. implement minimum security and actor-based authorization;
 3. complete cloud deployment, object storage, CI publishing, and the required
    reliability and operational baseline;
@@ -760,8 +764,7 @@ controlled CUSTOM DOCX publication
   -> Case/system defaults plus reviewed user input
   -> persisted Generation Values
   -> deterministic DOCX rendering
-  -> generated Case Document and generation traceability
-  -> human review and explicit finalization
+  -> completed generated Case Document and successful generation traceability
 ```
 
 The accepted eventual product workflow is:
@@ -876,9 +879,9 @@ G2 uses docx4j behind application-owned scanner and normalizer contracts. The
 spike established controlled split-run, body, table, nested-table, Chinese text,
 and save/reopen feasibility. It demonstrated exploratory traversal of content
 controls but did not establish content-control publication or rendering support.
-docx4j/JAXB types must not escape the adapter boundary. G3 separately owns
-final-value rendering and must complete visual-fidelity verification with safe
-representative Chinese DOCX fixtures before acceptance.
+docx4j/JAXB types must not escape the adapter boundary. G3 subsequently
+implemented final-value rendering and completed automated plus representative
+manual visual-fidelity verification with safe Chinese DOCX fixtures.
 
 The initial approved deterministic value bindings are:
 
@@ -891,8 +894,8 @@ The initial approved deterministic value bindings are:
 
 Case and system sources require the listed exact value type and a non-empty
 source key. `USER_INPUT` must not have a source key. G2 does not perform implicit
-conversion between incompatible source and field types. Date presentation
-formatting remains a G3 renderer decision.
+conversion between incompatible source and field types. D-030 defines the G4
+date input, semantic comparison, and exact rendering contract.
 
 Publication performs bounded DOCX/ZIP package preflight before docx4j parsing,
 never resolves external resources, validates supported marker locations, stores
@@ -918,6 +921,101 @@ signatures, tracked changes, comments, hidden text, or metadata. Template `name`
 that identity is created; later-version publication accepts the version field
 contract and rejects unexpected Template metadata. Template pagination uses
 `created_at DESC, id DESC` so equal timestamps cannot produce unstable pages.
+
+---
+
+## 2026-08-05
+
+### D-030
+
+Status: Accepted
+
+G4 completes Phase 5 generation as one synchronous, production-shaped command.
+The user first retrieves Case/system suggestions, reviews or corrects every
+value, and explicitly requests generation. The application then validates the
+complete submitted field set, verifies the exact immutable template bytes,
+renders in memory, stores the output, and persists the generated CaseDocument,
+DocumentGeneration, and Generation Values in one database transaction.
+Rendering and storage occur outside that transaction.
+
+Phase 5 does not persist an intermediate draft or require a second finalization
+action. Without browser editing or revised-document replacement, that action
+would be ceremonial rather than a meaningful business transition. Future
+Case-specific browser editing inserts persisted draft, human review/edit,
+revisions, and explicit finalization between rendering and the completed
+generated CaseDocument. That future workflow must not mutate its reusable
+Template Version. A later lifecycle migration may deterministically treat
+successful Phase 5 generations as finalized.
+
+`document_generations` represents successful business events, not request
+attempts. It identifies the Case, exact Template Version, optional resulting
+CaseDocument, Case-status snapshot, creation time, required UUID idempotency key,
+and deterministic request SHA-256. The idempotency key is unique. Reusing it
+with the same fingerprint returns the existing result; reusing it with a
+different Case, template, exact lexical value, or declared source returns a
+conflict. The fingerprint also includes the client-supplied IANA timezone used
+to resolve system dates.
+
+A concurrent duplicate is resolved by the database uniqueness constraint. The
+losing persistence transaction rolls back before the orchestrator looks up the
+winner. A matching winner returns the existing result; a different fingerprint
+returns a conflict; no winner means the failure was not proven to be an
+idempotency race and remains a persistence failure. Do not classify races by
+parsing MySQL exception text. The losing request compensates only the binary it
+exclusively owns. Failed attempts belong in privacy-safe logs and metrics rather
+than incomplete Generation rows.
+
+`generation_values` uses a stable primary key, belongs to one Generation,
+references one exact Template Field, stores the exact accepted scalar string
+and its explicit `CASE_FIELD`, `SYSTEM_VALUE`, or `USER_INPUT` source, and is
+unique per Generation and Template Field. It does not duplicate field metadata
+or preallocate OCR, AI, confidence, editor, or evidence columns. Future
+candidates and provenance attach through additive child records.
+
+Preparation stores nothing. It returns each field contract, a valid deterministic
+suggestion when available, and either `RESOLVED` or `REQUIRES_USER_INPUT`.
+Multiline, null, oversized, or type-invalid deterministic defaults are not
+offered as usable suggestions. Generation accepts a complete explicit list of
+field key, value, and value source. Missing, duplicate, extra, null, multiline,
+oversized, or type-invalid values fail before template access. A Case/system
+value may retain its declared source only when it still semantically matches the
+current deterministic value; otherwise the user must mark the reviewed
+correction as `USER_INPUT`. Stale deterministic values return a controlled
+conflict without exposing the expected legal value.
+
+Accepted strings are preserved exactly in the Generation Value and rendered
+DOCX. Per-value input is bounded to 10,000 Unicode code points and aggregate
+input to 100,000 code points. Decimal and Boolean values use strict plain
+lexical forms. Dates accept strict ISO `uuuu-MM-dd` and Chinese legal forms
+`uuuu年M月d日`, with padded or unpadded month/day, and must be valid calendar
+dates. Date comparison for Case/system source validation is semantic, while the
+submitted lexical form is preserved; preparation prefers the Chinese legal
+display form. Preparation and generation require the client's validated IANA
+timezone. An injected Clock resolves `currentDate` in that zone and never uses
+the backend host's default timezone.
+
+Before rendering, G4 bounds the immutable template read and requires its actual
+length and SHA-256 to match the published version metadata. Any mismatch fails
+closed without output or business metadata. If output storage succeeds but the
+database transaction fails, the workflow attempts idempotent binary removal and
+preserves the original error. Cleanup failures are logged without legal values.
+A process crash can still leave an orphaned object; do not introduce two-phase
+commit, a queue, worker, workflow engine, attempt table, or reconciliation job
+without operational evidence.
+
+Every successful `DocumentStorage.store` operation creates a newly allocated,
+exclusively owned object and returns a unique opaque key, including when the
+bytes match another object. This is required for safe individual removal and
+compensation. Content-addressed deduplication is outside the current contract.
+Public generation output availability is derived from whether the Generation's
+nullable CaseDocument reference is present; do not persist a separate
+`output_available` flag.
+
+Deleting an individual generated CaseDocument sets the Generation's optional
+document reference to null while retaining successful traceability. Case
+archival does not delete documents. A future permanent Case purge must
+coordinate legal retention, binary removal, and relational metadata; database
+cascade deletion is not an adequate storage workflow.
 
 ---
 

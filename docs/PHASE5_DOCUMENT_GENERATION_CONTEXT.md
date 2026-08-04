@@ -16,10 +16,9 @@ starting context for later phases. Retain it only as historical delivery
 context unless the repository's documentation-retention policy later removes
 it.
 
-G1 — Template persistence and G2 — Template API are implemented. The next
-planned ticket is **G3 — DOCX renderer**, beginning with the accepted
-representative-fixture verification gate. Rendering, generation, finalization,
-and their frontend journey are not yet implemented.
+G1 — Template persistence, G2 — Template API, and G3 — DOCX renderer are
+implemented. The next planned ticket is **G4 — Document generation**.
+Generation orchestration and its frontend journey are not yet implemented.
 
 The guiding delivery rule is:
 
@@ -53,8 +52,9 @@ The product should eventually let a user:
 4. Select a Case and one exact published template version.
 5. Review values acquired from Case data, system values, direct user input, and
    eventually Case-document evidence.
-6. Generate a DOCX draft while preserving supported formatting.
-7. Review or eventually edit the Case-specific draft and explicitly finalize it.
+6. Generate the completed Phase 5 DOCX while preserving supported formatting.
+7. Eventually review/edit a persisted Case-specific draft and explicitly
+   finalize it when browser document editing is introduced.
 
 The longer-term business target also uses information contained in uploaded Case files—for example evidence, bank statements, chat screenshots, pleadings, and scanned materials—to suggest field values. A lawyer must be able to inspect the supporting document and page, then accept, edit, or reject each suggestion.
 
@@ -80,16 +80,18 @@ Word editor, OCR, or AI:
 - select a Case and a published template version;
 - review values supplied from approved Case data, defined system values, and
   explicit user input;
-- generate and download a DOCX draft;
-- explicitly finalize the reviewed result.
+- generate, store, and download a completed DOCX after reviewing every input.
 
 This is the current delivery milestone, not the final product ceiling. The
 final authoring workflow adds mutable browser drafts and advisory placeholder
 suggestions upstream of publication. The final evidence workflow adds reviewed
 candidate values and provenance upstream of deterministic rendering.
 
-Finalization is an explicit workflow action by a human. It does not mean that
-the application independently verifies the document's legal correctness.
+Phase 5 deliberately performs human review before rendering and does not add a
+second ceremonial finalization action. Future browser editing inserts a
+persisted draft, review/edit, revisions, and explicit human finalization before
+the completed output; finalization will not mean that the application
+independently verifies legal correctness.
 
 ### 1.3 Confirmed Phase 5 deterministic technical boundary
 
@@ -108,7 +110,7 @@ The accepted technical boundary supporting that user journey is:
 
 ### 1.4 Deferred capabilities and technical approaches
 
-The following are explicitly outside the initial G1–G6 milestone:
+The following are explicitly outside the initial G1–G5 milestone:
 
 - extracting text from uploaded PDF or Word evidence;
 - OCR for scanned PDFs, screenshots, or images;
@@ -175,13 +177,10 @@ Select Case and exact Template Version
 Prefill Case/system values and review manual input or corrections
         |
         v
-Persist final Generation Values and validate required fields
+Validate the complete reviewed Generation Values
         |
         v
-Render deterministic DOCX and persist generated CaseDocument
-        |
-        v
-Download, review, and explicitly finalize
+Render deterministic DOCX; persist completed CaseDocument and successful traceability
 ```
 
 Eventual product workflow:
@@ -246,7 +245,10 @@ System values / User input ─────────────────�
 CaseDocument -> extraction/OCR/AI -> EvidenceCandidate -+
                    source/page/confidence + human review
 
-GenerationValue -> deterministic renderer -> generated CaseDocument -> finalize
+GenerationValue -> deterministic renderer -> completed generated CaseDocument
+
+[future Case-specific editing]
+renderer -> persisted draft -> human review/edit -> revisions -> explicit finalization
 ```
 
 Future authoring connects only through explicit publication. Future evidence
@@ -279,7 +281,7 @@ A stable reusable identity representing the business template, such as `授权�
 
 An immutable published snapshot of one template. Each version owns exactly one DOCX source and its storage metadata, including the content SHA-256 digest. Versioning exists so a generated document can always identify the exact template content and field contract used.
 
-A user's edits to one generated Case document do not alter the reusable template and do not create a new template version. A version is created only through explicit reusable-template publication. The final browser authoring product has separate unpublished working drafts, but draft saves and autosaves are not part of G1–G6 and never create versions.
+A user's edits to one generated Case document do not alter the reusable template and do not create a new template version. A version is created only through explicit reusable-template publication. The final browser authoring product has separate unpublished working drafts, but draft saves and autosaves are not part of G1–G5 and never create versions.
 
 #### DocumentTemplateField
 
@@ -312,11 +314,12 @@ Field definitions belong to a template version. Repeated definitions across vers
 
 #### GenerationRecord
 
-A generation record represents the workflow and traceability for generating a
-Case-related document from one exact template version. The accepted workflow
-persists a generation record and supports draft output followed by explicit
-finalization. Its exact schema, relationships, lifecycle representation, and
-API contract belong to G4/G5 and have not been finalized.
+A generation record represents a successful business event that generated a
+Case-related document from one exact template version. G4 stores it only after
+the output binary and database metadata succeed; failed attempts belong to
+privacy-safe logs and metrics. It identifies the Case, exact Template Version,
+optional resulting CaseDocument, Case-status snapshot, reviewed values,
+idempotency key, request fingerprint, and creation time.
 
 #### Generated document
 
@@ -349,7 +352,7 @@ later semantic analysis. Users accept, reject, resize, rename, remap, or create
 placeholders manually. Only the finalized deterministic field contract is
 published.
 
-These concepts are deliberately not persisted in G2–G6. Their schema follows a
+These concepts are deliberately not persisted in G2–G5. Their schema follows a
 future browser-editor integration and licensing spike. Future authoring calls
 the same publication boundary used by direct Phase 5 DOCX upload.
 
@@ -380,13 +383,15 @@ Case 1 ─── * CaseDocument
 
 Planned generation traceability:
 Case ─── GenerationRecord ─── exact DocumentTemplateVersion
+                 │       └── * GenerationValue ─── exact DocumentTemplateField
                  │
-                 └── generated output stored through CaseDocument/DocumentStorage
+                 └── optional generated CaseDocument ─── binary in DocumentStorage
 ```
 
 The template/version/field and Case/CaseDocument cardinalities are accepted.
-The exact cardinality and database relationships around `GenerationRecord` are
-not yet decided and must be finalized in G4.
+The Case and Template Version references are restrictive. Removing an
+individual generated CaseDocument sets its Generation reference to null while
+retaining successful traceability.
 
 ### 2.4 Important terminology
 
@@ -401,8 +406,11 @@ not yet decided and must be finalized in G4.
 - **Generation value:** the value supplied for one field in one generation; it is not part of the reusable field definition.
 - **Value acquisition:** obtaining a value from a Case, the system, user input, or a future extraction suggestion.
 - **Rendering:** deterministic replacement of approved values in the DOCX.
-- **Draft:** generated output that has not been explicitly finalized.
-- **Finalization:** an explicit human workflow action after review; it is not AI approval and does not represent independent legal verification by the application.
+- **Phase 5 completed output:** the DOCX produced after the user reviews every
+  input and explicitly requests generation; no intermediate draft is persisted.
+- **Future finalization:** an explicit human workflow action after browser
+  review/edit of a Case-specific draft; it is not AI approval or independent
+  legal verification by the application.
 - **Provenance:** the source document and page supporting a future extracted suggestion.
 - **Semantic field:** a possible future governed definition for a precise reusable evidence fact; it is not part of G1.
 
@@ -485,11 +493,18 @@ This layered approach may later give AI extraction stable targets without forcin
 
 ### 3.7 Human review and AI boundary
 
-**Decision:** The first workflow produces a DOCX draft and requires explicit human finalization. AI output, when introduced, is advisory only.
+**Decision:** Phase 5 requires human review of every value before one explicit
+generation command creates the completed output. It does not add a second
+post-download finalization action while document-specific editing is absent.
+AI output, when introduced, remains advisory only.
 
-**Reason:** Extracted legal facts can be incomplete or wrong. A user must see provenance and confirm or correct every suggestion before it is used for finalization.
+**Reason:** Extracted legal facts can be incomplete or wrong. A user must see
+provenance and confirm or correct every suggestion before it is rendered. Future
+browser editing inserts persisted draft, review/edit, revisions, and explicit
+finalization between rendering and completed-output storage.
 
-**Rejected:** Automatic legal-fact approval and automatic finalization.
+**Rejected:** Automatic legal-fact approval and a ceremonial Phase 5
+finalization transition that cannot store a revised document.
 
 ### 3.8 Consistency across MySQL and storage
 
@@ -530,6 +545,9 @@ This layered approach may later give AI extraction stable targets without forcin
   allocation, with binary compensation when metadata publication fails;
 - bounded template/version listing, template-local version retrieval, and exact
   published-content download without exposing storage keys or entities.
+- docx4j-backed deterministic scalar rendering behind the application-owned
+  renderer contract, with automated and representative manual verification for
+  exact replacement, Chinese text, tables, images, and supported formatting.
 
 ### 4.2 Present only as frontend mocks
 
@@ -547,20 +565,17 @@ The frontend currently contains mock-backed pages and models for:
 
 ### 4.3 Not implemented
 
-- template binary publication and storage;
-- placeholder scanning and field-contract validation;
-- template REST APIs;
-- `DocumentTemplateRenderer` implementation and docx4j visual-fidelity
-  verification;
 - generation record persistence;
 - `DocumentGenerationService`;
-- draft-generation or finalization APIs;
+- generation preparation and idempotent generation APIs;
 - live frontend integration for template or generation screens;
 - text extraction, OCR, AI, provenance, confidence, or evidence-review workflow.
 
-## 5. Open design questions
+## 5. Resolved boundaries and open design questions
 
-The following decisions are not finalized. They must remain explicit gates rather than being silently assumed during implementation.
+This section distinguishes accepted ticket boundaries from questions that
+remain deferred. Resolved G4 decisions are implementation constraints, while
+the later sections remain explicit gates rather than silent assumptions.
 
 ### 5.1 Completed G1 persistence boundary
 
@@ -614,7 +629,8 @@ Confirmed G2 boundaries are:
 ### 5.3 Renderer selection
 
 The focused comparison selected docx4j behind application-owned interfaces.
-Before G3 is accepted, continue representative non-sensitive fixture testing for:
+G3 is complete after automated tests and representative non-sensitive manual
+verification covering:
 
 - placeholders split across formatting runs;
 - placeholders in supported tables;
@@ -624,13 +640,77 @@ Before G3 is accepted, continue representative non-sensitive fixture testing for
 
 The representative source files discussed previously are external legal examples and must not be copied into the repository if they contain sensitive information. Safe synthetic fixtures are required for committed tests.
 
-### 5.4 Generation persistence and lifecycle
+### 5.4 Resolved G4 persistence and lifecycle boundary
 
-- Exact generation-record schema and its relationship to the resulting `CaseDocument`.
-- Exact draft/finalized state model and permitted transitions.
-- Whether and how values used for a generation are persisted for reproducibility.
-- Exact behavior for repeated finalization, stale state, failed storage, failed metadata persistence, and process crashes.
-- What “preview/edit” means in G5/G6 given that browser-based Word editing and reviewed-document replacement are deferred.
+- Generation records successful business events only; failed attempts remain
+  operational telemetry.
+- Generation Values retain exact reviewed strings, explicit source categories,
+  and stable references to the exact Template Fields.
+- A required UUID idempotency key plus deterministic request fingerprint makes
+  sequential and concurrent retry safe without adding an attempt table.
+- Phase 5 short-circuits draft and finalization after pre-render value review.
+  Persisted drafts, revisions, browser editing, and explicit finalization are a
+  future lifecycle inserted before completed-output storage.
+- Storage and MySQL use synchronous best-effort compensation, with process-crash
+  orphans accepted until evidence justifies reconciliation.
+
+The planned persistence contract is:
+
+```text
+document_generations
+  id PK
+  case_id FK RESTRICT
+  template_version_id FK RESTRICT
+  case_document_id nullable UNIQUE FK SET NULL
+  case_status_snapshot
+  idempotency_key UNIQUE
+  request_sha256
+  created_at
+
+generation_values
+  id PK
+  generation_id FK RESTRICT
+  template_field_id FK RESTRICT
+  resolved_value MEDIUMTEXT
+  value_source
+  UNIQUE(generation_id, template_field_id)
+```
+
+Preparation is a read-only `GET` scoped by Case, Template, and version. It
+returns field metadata, valid deterministic suggestions, and `RESOLVED` or
+`REQUIRES_USER_INPUT`; invalid deterministic defaults are never presented as
+usable suggestions. Generation is a `POST` with a required UUID
+`Idempotency-Key` and a complete list of `{fieldKey, value, valueSource}`.
+Missing, extra, duplicate, null, multiline, oversized, or type-invalid values
+fail before template access. A Case/system value may retain that source only
+when it semantically matches the current default; a reviewed correction uses
+`USER_INPUT`.
+
+Preparation and generation require a validated client-supplied IANA timezone;
+the backend host's default timezone is never used for `currentDate`. The request
+fingerprint covers Case, Template, version, timezone, and every exact lexical
+value and source in deterministic field-key order. Same-key/same-fingerprint
+replay returns the existing generation; same-key/different-fingerprint returns
+a conflict.
+
+The database unique constraint resolves concurrent races. Winner lookup occurs
+only after the losing persistence transaction rolls back. A matching winner is
+returned, a different fingerprint conflicts, and absence of a winner remains a
+genuine persistence failure rather than being inferred from MySQL exception
+text. Every successful storage call owns a newly allocated unique opaque key,
+so compensation removes only the loser's exclusive object.
+
+Values are bounded to 10,000 Unicode code points each and 100,000 in aggregate.
+Accepted strings are stored and rendered unchanged. Strict dates support ISO
+`uuuu-MM-dd` and Chinese legal `uuuu年M月d日`, with padded or unpadded month/day;
+Case/system date comparison is semantic while the user's reviewed lexical form
+is preserved. Preparation prefers the Chinese legal display form. Before
+rendering, the bounded template read must match both recorded byte length and
+SHA-256.
+
+API `outputAvailable` is derived from whether `case_document_id` is present. It
+is not stored independently and becomes false if individual CaseDocument
+removal sets that reference to null.
 
 ### 5.5 Security, audit, and retention
 
@@ -639,7 +719,7 @@ The representative source files discussed previously are external legal examples
 - Malware-scanning policy before untrusted templates or generated documents are rendered in a customer-data deployment.
 - Retention, legal hold, permanent purge, and object reconciliation policies.
 
-These are production-readiness requirements but are not permission to expand G1–G6 into the full Security phase.
+These are production-readiness requirements but are not permission to expand G1–G5 into the full Security phase.
 
 ### 5.6 Evidence-assisted generation
 
@@ -691,41 +771,43 @@ content.
 
 Suggested commit: `feat: add document template API`
 
-### Renderer verification gate
+### G3 — DOCX renderer (complete)
 
-The completed comparison selected docx4j. Before G3 is accepted, verify its
-rendering, supported and unsupported constructs, Chinese visual fidelity, and
-formatting preservation with safe representative DOCX fixtures.
+The docx4j-backed implementation performs deterministic scalar replacement
+behind the application-owned renderer contract. Automated tests and
+representative manual verification cover supported and unsupported constructs,
+Chinese text, tables, images, and formatting preservation. The renderer remains
+independent of Case loading, authorization, persistence, and storage adapters.
 
-### G3 — DOCX renderer
+Commit: `feat: render docx templates`
 
-Implement deterministic scalar replacement while preserving the supported basic formatting established by the spike. Keep the renderer independent of Case loading, authorization, persistence, and storage adapters.
+### G4 — Document generation
 
-Suggested commit: `feat: render docx templates`
-
-### G4 — Draft generation
-
-Introduce generation-record persistence, stable relational Generation Value
-records, and `DocumentGenerationService`. Coordinate approved Case and system
-values, explicit user input or correction, validation, rendering, storage,
-Case-document metadata, and compensation. Keep evidence provenance additive and
+Introduce successful generation-record persistence, stable relational
+Generation Value records, and `DocumentGenerationService`. Provide a read-only
+input-preparation API and an idempotent generation command. Coordinate approved
+Case and system values in the client-supplied IANA timezone, explicit user input
+or correction, strict scalar and Chinese/ISO date validation,
+immutable-template size/hash verification, rendering, exclusive binary storage,
+Case-document metadata, post-rollback race classification, and compensation.
+Preserve exact reviewed lexical values and derive output availability from the
+nullable CaseDocument relationship. Keep evidence provenance additive and
 deferred rather than adding speculative extraction columns.
 
-Suggested commit: `feat: generate document drafts`
+Suggested commit: `feat: generate case documents`
 
-### G5 — Human finalization
+### G5 — Frontend integration
 
-Support draft download and explicit finalization with tested lifecycle transitions. Do not treat generation as automatically approved.
-
-Suggested commit: `feat: finalize generated documents`
-
-### G6 — Frontend integration
-
-Replace only the relevant template and generation mock flow with the live APIs. Keep unrelated mock-backed modules unchanged.
+Replace only the relevant template and generation mock flow with live input
+preparation, browser-detected IANA timezone, human value review, idempotent
+generation, derived output availability, and generated-document download. Keep
+unrelated mock-backed modules unchanged. Browser-based document editing,
+persisted revisions, and explicit finalization remain future work inserted
+between rendering and completed-output storage.
 
 Suggested commit: `feat: integrate document generation`
 
-### After G6
+### After G5
 
 Complete minimum security, cloud deployment, and the required reliability
 baseline before expanding the Phase 5 vertical slice into browser template
@@ -740,7 +822,7 @@ Future evidence candidate ──> reviewed Generation Value ──> existing ren
 The browser-authoring phase begins with the editor spike described in Section
 5.7. Evidence assistance follows its separately governed extraction, OCR,
 privacy, provenance, and human-review roadmap. Neither is permission to add
-speculative infrastructure to G2–G6.
+speculative infrastructure to G2–G5.
 
 ### Verification discipline for every ticket
 

@@ -18,9 +18,9 @@ Completed:
 
 Current engineering gaps:
 
-- Template persistence and controlled DOCX publication are implemented, while
-  rendering, generation, finalization, and the related frontend journey remain
-  incomplete.
+- Template persistence, controlled DOCX publication, and deterministic
+  rendering are implemented, while generation orchestration and the related
+  frontend journey remain incomplete.
 - Reminder workflows remain mock-backed.
 - Backend allowed origins are not environment-driven.
 - Image publishing, deployment, authentication, and operational monitoring are
@@ -34,7 +34,7 @@ Current engineering gaps:
 | Phase 2 — Case Document Management | Complete for the approved local file-management scope | D1–D8 provide metadata persistence, local storage, validated upload, list/download/removal APIs, and the live Case Detail file journey. | Begin Phase 3 containerization. |
 | Phase 3 — Containerization | Complete for the approved local-development scope | C1 and C2 provide non-root backend and frontend images; C3 connects them to isolated MySQL 9.7.1 with persistent database and document volumes. | Begin CI1, the application verification workflow. |
 | Phase 4 — Continuous Integration | Complete for verification scope; publishing deferred | CI1 and CI2 are complete: application verification and both application-owned image builds pass on GitHub. CI3 remains tracked but depends on an approved deployment architecture. | Resume CI3 after P1 selects the deployment platform and registry. |
-| Phase 5 — Minimal Document Generation | In progress; G1–G2 complete | D-019, D-026, D-027, D-028, and D-029 define the deterministic vertical slice and expandable versioned-template foundation; migration V8, persistence, controlled inspection, normalization, immutable publication, bounded reads, and exact-content download are implemented. | Begin the G3 renderer verification gate and implementation. |
+| Phase 5 — Minimal Document Generation | In progress; G1–G3 complete | D-019 and D-026–D-030 define the deterministic vertical slice and expandable versioned-template foundation; template persistence/publication and the docx4j renderer are implemented and verified. | Implement G4 backend generation, then G5 frontend integration. |
 | Phase 6 — Minimum Security | Not started | User, authentication, and backend authorization remain unimplemented. | Complete before a customer-data deployment. |
 | Phase 7 — Cloud Deployment | Not started | Hosting and production architecture are not selected. | Begin after CI and minimum security decisions. |
 | Phase 8 — Reliability and Performance | Not started | No operational baseline exists. | Begin after a staging deployment is reproducible. |
@@ -100,22 +100,21 @@ demonstrable journey before minimum security and cloud deployment:
 controlled template publication
   -> Case/system/manual value review
   -> deterministic DOCX generation
-  -> generated-draft download
-  -> explicit human finalization
-  -> Case document traceability
+  -> completed generated Case Document
+  -> successful generation traceability
 ```
 
 - Persist reusable templates with immutable DOCX versions.
 - Define structured scalar template fields.
 - Detect controlled placeholders and require field definitions to match before
   publication.
-- Generate DOCX drafts from resolved Case and user-provided values.
-- Require explicit human finalization.
+- Generate completed DOCX Case Documents from reviewed Case, system, and
+  user-provided values.
 - Keep PDF conversion, browser editing, images, OCR, and AI deferred.
 
 The deterministic milestone is intentionally useful without AI. Evidence
 extraction begins only after templates, field contracts, rendering, generation
-traceability, and human finalization work end to end.
+traceability work end to end.
 
 This delivery boundary is not the final product ceiling. Future browser
 authoring adds mutable drafts and suggestions upstream of the existing
@@ -194,7 +193,7 @@ mutation operations.
 | Phase 2 — Case Document Management | Unit-test storage contracts and validation; run metadata repository tests against MySQL; test local storage with temporary directories and path-safety cases; exercise multipart upload, compensation, list, streaming-download, and removal behavior through HTTP integration tests; cover frontend loading, empty, error, upload, download, confirmation, and removal states plus a manual Case Detail journey. |
 | Phase 3 — Containerization | Build each image from a clean context; verify non-root backend execution; start a fresh Compose environment; confirm Flyway startup, service health, frontend-to-backend routing, persistent database/file volumes, and restart behavior. |
 | Phase 4 — Continuous Integration | Run all backend, frontend, database, coverage, and image checks from a clean checkout; verify dependency caching does not hide missing setup; confirm failures block merging and successful builds produce reproducible results. |
-| Phase 5 — Minimal Document Generation | Test template/version persistence against MySQL; use representative DOCX fixtures for placeholders split across formatting runs and tables; verify missing/extra input handling, formatting preservation, generation compensation, immutable version traceability, draft/finalized transitions, and frontend review/error states. |
+| Phase 5 — Minimal Document Generation | Test template/version persistence against MySQL; use representative DOCX fixtures for placeholders split across formatting runs and tables; verify missing/extra input handling, exact reviewed-value rendering, idempotent generation, template-content integrity, compensation, immutable version traceability, and frontend review/error states. |
 | Phase 6 — Minimum Security | Test valid and invalid login, disabled users, expiry/logout, and password handling; exercise every protected operation as allowed, unauthenticated, and forbidden roles; verify frontend protected navigation without treating UI visibility as authorization. |
 | Phase 7 — Cloud Deployment | Validate production configuration without exposing secrets; run migrations against staging; verify TLS, CORS/routing, object storage, upload/download, synthetic end-to-end journeys, restart behavior, and a rehearsed rollback. |
 | Phase 8 — Reliability and Performance | Verify health/readiness and metrics during dependency failures; rehearse database and object-storage restoration; run repeatable k6 workloads with realistic synthetic volume; compare query plans and latency before and after any optimization. |
@@ -249,17 +248,17 @@ but combining ticket boundaries requires a separate scope review.
 | --- | --- | --- | --- |
 | G1 — Template persistence (complete) | Persist template identity, immutable DOCX versions, and structured scalar field definitions. | Flyway and repository integration tests against MySQL. | `feat: persist versioned document templates` |
 | G2 — Template API (complete) | Inspect `CUSTOM` DOCX templates containing controlled Chinese onboarding markers, canonical ASCII placeholders, or both; let users group detected markers and confirm canonical keys and field metadata; normalize and publish after one human confirmation; allow an empty contract and later immutable versions; provide paginated template/version listing, version-number retrieval, and exact published-content download. | Synthetic DOCX tests for empty/populated inspection, Chinese and canonical marker grammar, mixed input, canonical self-mapping, repeated and many-to-one grouping, split runs and tables, known unsupported locations, normalization and authoritative rescan, exact source/type validation, package safety, compensation, concurrent version allocation, missing resources, pagination, scoped lookup, and immutable-version behavior. | `feat: add document template API` |
-| G3 — DOCX renderer | Replace resolved scalar field values while preserving supported basic formatting. | Renderer fixture tests for replacement, missing values, unsupported constructs, and unchanged formatting. | `feat: render docx templates` |
-| G4 — Draft generation | Coordinate Case, system, and user-input values, rendering, storage, metadata, compensation, generation records, and stable relational Generation Value records that future provenance can reference. | Service and API tests for success, source resolution and override behavior, validation, retained value traceability, storage failure, and persistence cleanup. | `feat: generate document drafts` |
-| G5 — Human finalization | Download drafts and explicitly finalize reviewed generation records without automatic approval. | Tests for draft retrieval, valid finalization, repeated finalization, and stale or missing records. | `feat: finalize generated documents` |
-| G6 — Frontend integration | Replace only the relevant template and generation mock flow with draft generation and explicit finalization. | Frontend tests and manual template-selection, input, generation, download, error, and finalization checks. | `feat: integrate document generation` |
+| G3 — DOCX renderer (complete) | Replace resolved scalar field values while preserving supported basic formatting. | Renderer fixture tests and manual visual verification cover exact replacement, missing values, unsupported constructs, Chinese text, tables, images, and formatting preservation. | `feat: render docx templates` |
+| G4 — Document generation | Prepare Case/system suggestions in a client-supplied IANA timezone, accept a complete human-reviewed value set, render and store the completed DOCX, and persist successful generation traceability with stable relational Generation Value records. Use request idempotency, immutable-template integrity verification, exclusive storage objects, post-rollback race classification, and best-effort compensation. | MySQL, storage-contract, service, and API tests for preparation, timezone-aware source validation and overrides, scalar/date contracts, retained exact values, idempotent replay and races, template-content integrity, storage/persistence failures, and compensation. | `feat: generate case documents` |
+| G5 — Frontend integration | Replace only the relevant template and generation mock flow with live input preparation, browser-detected IANA timezone, human value review, idempotent generation, derived output availability, and generated-document download. | Frontend tests and manual template-selection, timezone/date, input, generation, retry, removed-output, download, and error checks. | `feat: integrate document generation` |
 
-The focused DOCX spike selected docx4j for the controlled scanner/normalizer and
-future renderer, isolated behind application-owned contracts. G3 must still
-verify rendered Chinese DOCX visual fidelity and formatting preservation using
-safe representative fixtures before its renderer is accepted.
+The focused DOCX spike selected docx4j for the controlled scanner, normalizer,
+and renderer, isolated behind application-owned contracts. G3 completed
+automated and representative manual verification of Chinese DOCX fidelity and
+supported formatting preservation.
 
-Deferred generation work includes reviewed-document replacement, DOCX-to-PDF
+Deferred generation work includes persisted draft/revision/finalization,
+reviewed-document replacement, DOCX-to-PDF
 conversion, advanced template syntax, image uploads, OCR, and AI-assisted
 extraction.
 
@@ -272,16 +271,16 @@ Later tickets have explicit decision gates:
   normalization/publication. Known content-control marker mistakes and
   embedded or active package content fail closed with controlled error details,
   while ordinary images remain allowed;
-- before G3 is accepted, verify docx4j rendering, supported DOCX constructs,
-  Chinese visual fidelity, and formatting preservation through representative
-  safe fixtures;
-- before G4, decide the generation-record identity, relationships, and retained
-  values; Generation Values require stable relational identities, but unused
-  evidence/OCR/AI columns remain prohibited;
-- before G5, decide finalization meaning, reversibility, finalized-output
-  immutability, and correction behavior;
-- before G6, define the human review experience without introducing the
+- G3 is complete after automated renderer tests and representative manual DOCX
+  verification;
+- G4 uses successful-only Generation records, stable relational Generation
+  Values, explicit source attribution, client-supplied IANA timezone, required
+  UUID idempotency keys, exclusive storage objects, and post-rollback
+  best-effort compensation; unused evidence/OCR/AI columns remain prohibited;
+- G5 defines the Phase 5 frontend review experience without introducing the
   deferred browser-based Word editor or reviewed-document replacement flow.
+  Persisted Case-specific drafts, revisions, and explicit finalization remain a
+  future additive workflow between rendering and completed-output storage.
 
 ### Phase 6 — Minimum Security
 
@@ -320,7 +319,7 @@ privacy, deployment cost, and representative-material evidence.
 
 #### Browser Template Authoring
 
-The final authoring product is confirmed, but it does not expand G2–G6. A user
+The final authoring product is confirmed, but it does not expand G2–G5. A user
 will upload a Word document or create a blank draft, edit boilerplate and
 placeholders in a browser, review suggestions derived from visual conventions,
 and explicitly publish through the existing immutable publication boundary.
@@ -342,7 +341,7 @@ may remain available as an expert workflow.
 #### Evidence-Assisted Generation
 
 These capabilities remain tracked so the final business goal is not lost, but
-they do not expand G1–G6.
+they do not expand G1–G5.
 
 Evidence assistance extends value acquisition rather than template definition
 or rendering. A file uploaded during generation should normally become a Case
