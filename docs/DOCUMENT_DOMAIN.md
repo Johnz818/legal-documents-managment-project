@@ -4,9 +4,10 @@
 
 Document generation exists to reduce the manual work required to transfer Case
 information and information from supporting materials into recurring legal
-documents. The initial workflow lets a user choose a reusable template, supply
-resolved Case values and explicit input, generate a DOCX draft, review the
-result, and explicitly finalize it.
+documents. The initial workflow lets a user choose a reusable template, review
+resolved Case/system values and explicit input, and generate a completed DOCX.
+Future browser editing inserts a Case-specific draft and explicit finalization
+before that completed output.
 
 The longer-term business goal is to assist this process by extracting possible
 values from Case materials. Such assistance remains advisory: a human must
@@ -21,7 +22,7 @@ exist upstream of approved generation values.
 Phase 5 is a production-shaped vertical slice and an expandable foundation,
 not the complete authoring and evidence-assisted product. It completes
 controlled publication, deterministic Case/system/manual value resolution,
-DOCX generation, and human finalization end to end. Future authoring and
+DOCX generation, and successful traceability end to end. Future authoring and
 extraction extend this core instead of replacing it.
 
 Case Document upload, download, management, and removal are already established
@@ -169,15 +170,15 @@ supported by that Template Version.
 ### 2.7 Document Generation
 
 **Document Generation** is the coordinated business process that creates a
-Case-related draft from one exact Template Version and a set of resolved input
+Case-related document from one exact Template Version and a set of resolved input
 values. It exists to preserve the relationship between the Case, the template
 contract, the values used, and the resulting output.
 
-The process requires durable generation traceability and supports draft output
-followed by explicit human finalization. A generation record provides the
-durable representation of that traceability; it is not the generation process
-itself. Its exact identity, structure, relationships, retained values, and
-state representation remain open for the generation tickets.
+The process requires durable generation traceability. In Phase 5, the user
+reviews the complete value set before requesting generation, and the successful
+command stores the completed DOCX without an intermediate persisted draft. A
+generation record provides the durable representation of that successful
+business event; it is not an attempt log or the generation process itself.
 
 Document Generation does not define template structure, implement binary
 storage, or approve legal facts automatically.
@@ -220,6 +221,12 @@ Storage is responsible for binary durability and provider-level operations. It d
 Case associations, filenames as business metadata, template contracts,
 generation state, authorization rules, or finalization decisions.
 
+Every successful `store` operation allocates a new, exclusively owned opaque
+storage key, even when another object contains identical bytes. This ownership
+rule makes individual removal and compensating cleanup safe. Content-addressed
+deduplication would require a separately designed shared-reference lifecycle and
+is not part of the current storage contract.
+
 ## 3. Domain Relationships
 
 ### 3.1 Confirmed business relationships
@@ -249,8 +256,10 @@ Template Version ─── provides structure for ─── Generated Document
 - A Generated Document is structured by the exact Template Version used for
   its generation. The Template Version does not own the Generated Document.
 
-The exact cardinality and persistent links between Document Generation and its
-resulting Case Document have not yet been finalized.
+Document Generation belongs to one Case and one exact Template Version, owns
+one value per used Template Field, and optionally references its resulting Case
+Document. The optional link preserves traceability if that individual file is
+later removed.
 
 ### 3.2 Infrastructure relationships
 
@@ -344,12 +353,10 @@ GENERATION SIDE
                                                     +── result ──>
                                                     |   generated CaseDocument
                                                     |
-                                                    +── DRAFT
-                                                          |
-                                                          | explicit human
-                                                          | finalization
-                                                          v
-                                                      FINALIZED
+                                                    +── completed Phase 5 output
+
+Future browser editing inserts DRAFT -> review/edit -> revisions -> FINALIZED
+between rendering and the completed generated CaseDocument.
 ```
 
 Expansion follows two rules:
@@ -412,13 +419,15 @@ identify the exact source and field contract it used. Similar field definitions
 may therefore appear in several versions; this duplication preserves history
 rather than making old versions depend on mutable central definitions.
 
-### 4.3 Draft generation
+### 4.3 Phase 5 generation
 
 The user selects a Case and a published Template Version. Required values are
 resolved from Case information and explicit user input. Defined system
-values may also participate. After validation, deterministic rendering produces
-a DOCX draft, which is stored as a generated Case Document with generation
-traceability.
+values may also participate. Preparation exposes valid deterministic defaults
+without storing business records. The user reviews every value and its declared
+source, then explicitly requests generation. After validation, deterministic
+rendering produces a DOCX that is stored as a generated Case Document together
+with successful generation traceability.
 
 The user may correct a resolved value for this generation without silently
 changing the underlying Case. Future evidence assistance may present candidate
@@ -426,17 +435,20 @@ values from existing Case Documents or files uploaded through the generation
 journey. Such uploads should normally become Case Documents so provenance can
 use a stable source identity.
 
-### 4.4 Human review and finalization
+### 4.4 Human review and future finalization
 
-The generated output remains a draft until a human explicitly finalizes the
-reviewed result. Finalization records a workflow decision; it does not mean the
-application independently verifies legal correctness.
+Phase 5 human review occurs before rendering. Because the application cannot yet
+edit or replace a generated DOCX, a separate post-download finalization action
+would not represent a meaningful product decision and is not persisted.
 
-The exact draft/finalized state representation and allowed transitions belong
-to the generation tickets. Browser-based editing of a generated draft is part
-of the final product direction but is deferred from the current Phase 5
-vertical slice. Editing a Case-specific output never mutates its reusable
-Template Version.
+The future browser-authoring phase inserts a persisted Case-specific draft,
+human review/edit, revisions, and explicit finalization between rendering and
+the completed generated Case Document. Finalization will record a human
+workflow decision; it will not mean the application independently verifies
+legal correctness. Editing a Case-specific output never mutates its reusable
+Template Version. If a lifecycle state is introduced later, successful Phase 5
+generations may be backfilled as finalized because they already represent the
+completed output of the short-circuited workflow.
 
 ### 4.5 Historical integrity
 
@@ -515,9 +527,7 @@ Publish controlled CUSTOM DOCX template
         -> collect and review explicit user input or corrections
         -> validate required Generation Values
         -> render deterministic DOCX
-        -> persist generated CaseDocument and generation traceability
-        -> download and review draft
-        -> explicitly finalize
+        -> persist completed CaseDocument and successful generation traceability
 ```
 
 ### 6.2 Eventual product workflow
@@ -556,7 +566,7 @@ Load Case and Template Version
 Resolve and validate required values
         │
         v
-Render deterministic DOCX draft
+Render deterministic DOCX
         │
         v
 Store generated binary
@@ -565,14 +575,14 @@ Store generated binary
 Persist Case Document metadata and generation traceability
         │
         v
-Return generated draft for human review
+Return completed generation metadata; content remains available through the CaseDocument API
 ```
 
 ### 6.5 Output
 
-The output is a DOCX draft associated with the Case, represented in the Case's
-document collection as generated output and linked conceptually to its exact
-Template Version through generation traceability.
+The Phase 5 output is a completed DOCX associated with the Case, represented in
+the Case's document collection as generated output and linked to its exact
+Template Version and reviewed values through generation traceability.
 
 ### 6.6 Responsibility and failure boundaries
 
@@ -599,6 +609,50 @@ coordinating best-effort compensation when only part of the operation
 succeeds. The accepted operation order, rejection of two-phase commit, and
 possible future reconciliation are architecture decisions recorded in
 `DECISIONS.md`, not additional domain concepts.
+
+Generation is synchronous in Phase 5: validate, verify and open the immutable
+template, render in memory, store the output, then persist CaseDocument,
+Generation, and Generation Values in one database transaction. Rendering and
+storage do not hold a database transaction open. If persistence fails after
+storage, the workflow attempts idempotent removal and preserves the original
+failure; cleanup failure is logged without legal values. A process crash can
+still leave an unreferenced object, which is an accepted residual risk until
+operational evidence justifies reconciliation.
+
+A Generation exists only after storage and the database transaction succeed.
+Failures are logs and metrics rather than incomplete Generation rows. Every
+successful Generation identifies the Case, exact Template Version, resulting
+CaseDocument when retained, Case-status snapshot, reviewed Generation Values,
+idempotency key, request fingerprint, and creation time. Removing an individual
+CaseDocument sets the Generation's optional document reference to null while
+retaining traceability. Case archival never deletes documents; future Case
+purge must coordinate retention, binary removal, and relational metadata rather
+than relying on database cascade deletion.
+
+Each Generation Value refers to one exact Template Field and preserves the
+accepted scalar string and its explicit source category. Phase 5 does not
+normalize a reviewed value before storage or rendering. `DATE` accepts strict
+ISO `uuuu-MM-dd` and Chinese legal forms `uuuu年M月d日` (padded or unpadded),
+validates the calendar date, and preserves the submitted spelling. Comparing a
+Case/system date default uses its semantic date so an ISO default may be
+reviewed and rendered in Chinese form without becoming a manual override.
+
+The client supplies one validated IANA timezone to preparation and generation.
+Defined system dates are resolved with an injected Clock in that zone rather
+than the backend host's default timezone. The timezone participates in the
+request fingerprint together with Case, exact Template Version, field keys,
+exact lexical values, and explicit sources.
+
+Concurrent idempotent requests are serialized by the Generation's unique key.
+If persistence fails, winner classification occurs only after the losing
+transaction has rolled back. A matching winner returns the existing result; a
+different fingerprint returns a conflict; absence of a winner remains a genuine
+persistence failure. In every case, compensation removes only the losing
+request's exclusively owned object.
+
+Generated-output availability is derived from the nullable CaseDocument
+reference. It is true exactly when that reference is present and is never
+stored as an independent flag that could drift from the relationship.
 
 ## 7. Domain Boundary and Responsibility
 
@@ -707,20 +761,15 @@ marker forms, legacy DOC conversion, semantic-similarity suggestions, and
 browser editing remain deferred. Exact HTTP error payload details remain an
 implementation-level G2 contract.
 
-### Generation traceability and lifecycle
+### Future generated-document editing and lifecycle
 
-- What is the exact generation-record model and its relationship to the
-  resulting Case Document?
-- Which generation values must be retained for reproducibility?
-- What are the exact draft/finalized state representation and allowed
-  transitions?
-- What business commitment does finalization represent, and is it reversible?
-- How should repeated finalization, stale state, and later document corrections
-  behave?
-- Is a finalized generated binary immutable, and how should later revisions be
+- How are persisted Case-specific drafts, revisions, and final output related?
+- What business commitment does future finalization represent, and is it
+  reversible?
+- Is a finalized generated binary immutable, and how are later corrections
   represented?
-- What review experience is supported while browser-based Word editing and
-  reviewed-document replacement remain deferred?
+- Which editor and reviewed-document replacement contracts preserve generated
+  history without changing the reusable Template Version?
 
 ### Future document formats
 

@@ -74,8 +74,7 @@ Users can:
 - Review values acquired from Case data, defined system values, explicit user
   input, and eventually information extracted from Case documents.
 - Generate a document using only reviewed values.
-- Review generation inputs and the generated draft, then explicitly finalize
-  the reviewed result.
+- Review all generation inputs, then generate and store the completed DOCX.
 
 Example:
 
@@ -149,7 +148,7 @@ Case files
 For example, a Case may contain a bank statement, chat screenshots, and a
 scanned pleading. The system may suggest `借款本金：200000元` for a declared
 template field and identify the supporting file and page. A lawyer must confirm
-or correct the value before the application generates the draft.
+or correct the value before the application generates the document.
 
 Template-field identification and field-value acquisition are separate
 capabilities:
@@ -184,7 +183,7 @@ template or publish a new template version.
 Phase 5 is a production-shaped vertical slice and an expandable foundation,
 not the complete authoring and evidence-assisted product. It requires
 controlled DOCX publication, Case-backed and system defaults, manual input,
-deterministic DOCX generation, and human finalization. It deliberately reaches
+deterministic DOCX generation, and completed-output storage. It deliberately reaches
 an end-to-end deployable workflow before browser authoring, OCR, or AI-assisted
 extraction is implemented.
 
@@ -213,7 +212,7 @@ Application normalizes, validates, and explicitly publishes immutable Template V
 User selects Case and exact Template Version
         |
         v
-Application prefills Case and system values
+Application prefills Case and system values using the user's supplied IANA timezone
         |
         v
 User reviews defaults and enters or corrects remaining values
@@ -222,14 +221,25 @@ User reviews defaults and enters or corrects remaining values
 Application validates required Generation Values
         |
         v
-Deterministic renderer creates DOCX draft
+Deterministic renderer creates the completed Phase 5 DOCX
         |
         v
-Store generated Case Document and generation traceability
-        |
-        v
-User downloads, reviews, and explicitly finalizes the result
+Store generated Case Document and successful generation traceability
 ```
+
+Phase 5 places the human decision before rendering: the user reviews every
+value and explicitly requests generation. Because this milestone has no
+browser editor or revised-document upload, it does not persist an intermediate
+draft or ask for a second ceremonial confirmation after download. When
+Case-specific browser editing is introduced, its draft, review/edit, revision,
+and explicit-finalization steps are inserted between deterministic rendering
+and the completed generated Case Document.
+
+The client supplies the user's IANA timezone, for example `Asia/Shanghai`, to
+both input preparation and generation. System dates are resolved in that zone,
+never from the backend host's default timezone. The timezone participates in
+the idempotent request identity so a retry cannot silently change the meaning
+of `currentDate`.
 
 Phase 5 does not create a template version for an editor autosave or for an
 edit made to one Case-specific generated document. It creates a version only
@@ -506,10 +516,18 @@ Key information:
 - Document name
 - Case stage at generation time
 - Generation date
-- Generation lifecycle state
+- Successful generation record and reviewed values
 
 A case may have multiple generated documents. Each generated document uses one
-exact published template version.
+exact published template version. In Phase 5, a generation record is created
+only when the generated binary and its database metadata have both been stored
+successfully. Failed attempts are operational events recorded through safe
+logs and metrics, not incomplete business records.
+
+Generated-output availability is derived from whether the Generation still
+references its Case Document; it is not separately mutable state. Removing an
+individual generated Case Document makes that output unavailable while
+retaining the successful Generation and reviewed values for traceability.
 
 ### Reminder
 
@@ -629,8 +647,9 @@ The backend now persists stable Document Template identities, immutable version
 metadata, and version-owned field definitions. It can inspect controlled DOCX
 markers, normalize human-confirmed mappings, publish immutable `CUSTOM`
 template versions, list templates and versions, and download exact published
-content. Rendering, generation, and preview/editing are not yet implemented, so
-the related frontend journeys continue to use legacy mock models. Generated
+content. Deterministic DOCX rendering is implemented and independently tested;
+generation orchestration and preview/editing are not yet implemented, so the
+related frontend journeys continue to use legacy mock models. Generated
 mock documents are not presented as persisted Case files.
 
 The manual Case creation page submits the approved scalar model to the backend Case creation API. Lead lawyers still come from the temporary frontend user dataset and are persisted as name snapshots until the User domain is implemented.
