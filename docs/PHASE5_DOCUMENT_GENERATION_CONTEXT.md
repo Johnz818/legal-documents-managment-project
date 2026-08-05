@@ -16,9 +16,10 @@ starting context for later phases. Retain it only as historical delivery
 context unless the repository's documentation-retention policy later removes
 it.
 
-G1 — Template persistence, G2 — Template API, and G3 — DOCX renderer are
-implemented. The next planned ticket is **G4 — Document generation**.
-Generation orchestration and its frontend journey are not yet implemented.
+G1 — Template persistence, G2 — Template API, G3 — DOCX renderer, and G4 —
+Document generation are implemented. The next planned ticket is **G5 —
+Frontend integration**. The live frontend generation journey is not yet
+implemented, so Phase 5 remains in progress.
 
 The guiding delivery rule is:
 
@@ -548,6 +549,21 @@ finalization transition that cannot store a revised document.
 - docx4j-backed deterministic scalar rendering behind the application-owned
   renderer contract, with automated and representative manual verification for
   exact replacement, Chinese text, tables, images, and supported formatting.
+- Flyway V9 successful-generation and stable relational Generation Value
+  persistence with restrictive history references and nullable generated-output
+  retention;
+- read-only generation preparation and synchronous generation APIs using a
+  client-supplied IANA timezone, complete reviewed scalar values, strict
+  Chinese/ISO date validation, and exact lexical-value preservation;
+- request fingerprinting and UUID idempotency with matching replay before
+  mutable Case/system freshness validation, database winner selection for
+  concurrent races, and conflict handling for reused keys;
+- bounded immutable-template length/SHA-256 verification, deterministic DOCX
+  rendering, exclusive output storage, transactional metadata persistence,
+  post-rollback winner classification, and best-effort compensation;
+- automated MySQL/service/API verification plus a representative Postman
+  workflow covering preparation, generated-DOCX download, idempotent replay,
+  stale values, key conflicts, and invalid input.
 
 ### 4.2 Present only as frontend mocks
 
@@ -565,9 +581,6 @@ The frontend currently contains mock-backed pages and models for:
 
 ### 4.3 Not implemented
 
-- generation record persistence;
-- `DocumentGenerationService`;
-- generation preparation and idempotent generation APIs;
 - live frontend integration for template or generation screens;
 - text extraction, OCR, AI, provenance, confidence, or evidence-review workflow.
 
@@ -781,11 +794,11 @@ independent of Case loading, authorization, persistence, and storage adapters.
 
 Commit: `feat: render docx templates`
 
-### G4 — Document generation
+### G4 — Document generation (complete)
 
-Introduce successful generation-record persistence, stable relational
-Generation Value records, and `DocumentGenerationService`. Provide a read-only
-input-preparation API and an idempotent generation command. Coordinate approved
+G4 introduces successful generation-record persistence, stable relational
+Generation Value records, and `DocumentGenerationService`. It provides a read-only
+input-preparation API and an idempotent generation command, coordinating approved
 Case and system values in the client-supplied IANA timezone, explicit user input
 or correction, strict scalar and Chinese/ISO date validation,
 immutable-template size/hash verification, rendering, exclusive binary storage,
@@ -794,7 +807,7 @@ Preserve exact reviewed lexical values and derive output availability from the
 nullable CaseDocument relationship. Keep evidence provenance additive and
 deferred rather than adding speculative extraction columns.
 
-Suggested commit: `feat: generate case documents`
+Commit: `feat: generate case documents`
 
 ### G5 — Frontend integration
 
