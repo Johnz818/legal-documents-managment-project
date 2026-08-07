@@ -124,6 +124,27 @@ export interface GenerationValidationResult {
   formError?: string
 }
 
+export interface GenerationErrorField {
+  fieldKey: string
+  displayName: string
+  message: string
+}
+
+export interface GenerationErrorPresentation {
+  summary: string
+  detail?: string
+  affectedFields: GenerationErrorField[]
+}
+
+export interface StaleValueConflict {
+  fieldKey: string
+  displayName: string
+  previousValue: string
+  currentValue: string
+  currentSource: 'CASE_FIELD' | 'SYSTEM_VALUE'
+  resolution: 'USE_CURRENT' | 'KEEP_PREVIOUS' | null
+}
+
 export type GenerationFailureAction =
   | 'RETRY_EXACT_REQUEST'
   | 'CORRECT_VALUES'
@@ -132,4 +153,3 @@ export type GenerationFailureAction =
   | 'RESELECT_TEMPLATE_VERSION'
   | 'STOP_IDEMPOTENCY_CONFLICT'
   | 'STOP_TEMPLATE_INTEGRITY'
-

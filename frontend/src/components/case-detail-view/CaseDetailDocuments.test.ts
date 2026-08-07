@@ -32,6 +32,7 @@ const documentSummary: CaseDocumentSummaryResponse = {
   fileSize: 1536,
   createdAt: '2026-07-29T10:00:00',
   updatedAt: '2026-07-29T10:00:00',
+  generatedAt: null,
 }
 
 const mountDocuments = () => mount(CaseDetailDocuments, {
@@ -81,7 +82,65 @@ describe('CaseDetailDocuments', () => {
     expect(wrapper.text()).toContain('证据材料.pdf')
     expect(wrapper.text()).toContain('PDF')
     expect(wrapper.text()).toContain('1.5 KB')
+    expect(wrapper.text()).toContain('上传于')
     expect(wrapper.text()).not.toContain('暂无案件文件')
+  })
+
+  it('shows verified local generation times and stable IDs for identical filenames', async () => {
+    const generatedAt = '2026-08-06T16:20:17Z'
+    const localTime = vi.spyOn(Date.prototype, 'toLocaleString').mockReturnValue('浏览器本地时间')
+    vi.mocked(getCaseDocuments).mockResolvedValue([
+      {
+        ...documentSummary,
+        id: 13,
+        originalFileName: '生成文书.docx',
+        documentSource: 'GENERATED',
+        fileFormat: 'DOCX',
+        generatedAt,
+      },
+      {
+        ...documentSummary,
+        id: 14,
+        originalFileName: '生成文书.docx',
+        documentSource: 'GENERATED',
+        fileFormat: 'DOCX',
+        generatedAt,
+      },
+    ])
+    const wrapper = mountDocuments()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('生成于')
+    expect(wrapper.text()).toContain('浏览器本地时间')
+    expect(wrapper.text()).toContain('文件编号 #13')
+    expect(wrapper.text()).toContain('文件编号 #14')
+    expect(wrapper.findAll('p.truncate.font-medium').map(item => item.text()))
+      .toEqual(['生成文书.docx', '生成文书.docx'])
+    expect((localTime.mock.instances[0] as Date).toISOString()).toBe('2026-08-06T16:20:17.000Z')
+    expect(localTime).toHaveBeenCalledWith('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    localTime.mockRestore()
+  })
+
+  it('falls back to the stable ID when historical generation time is unavailable', async () => {
+    vi.mocked(getCaseDocuments).mockResolvedValue([{
+      ...documentSummary,
+      id: 15,
+      originalFileName: '历史生成文书.docx',
+      documentSource: 'GENERATED',
+      fileFormat: 'DOCX',
+      generatedAt: null,
+    }])
+    const wrapper = mountDocuments()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('生成文书 · 文件编号 #15')
+    expect(wrapper.text()).not.toContain('生成于')
   })
 
   it('shows an empty state for a case without documents', async () => {

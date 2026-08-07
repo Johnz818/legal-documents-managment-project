@@ -6,43 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import SafeIcon from '@/components/common/SafeIcon.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import DocumentGenerationEntryActions from '@/components/document-generation-entry/DocumentGenerationEntryActions.vue'
-import DocumentGenerationEntryTemplatePreview from '@/components/document-generation-entry/DocumentGenerationEntryTemplatePreview.vue'
 
 const breadcrumbs = [
   { label: '首页', href: './case-list-view.html' },
   { label: '文书生成入口' },
 ]
 
-const recentTemplates = [
-  {
-    id: 'template_1',
-    name: '起诉状',
-    description: '民事案件起诉状模板',
-    category: '民事诉讼',
-    usageCount: 45,
-  },
-  {
-    id: 'template_2',
-    name: '答辩状',
-    description: '民事案件答辩状模板',
-    category: '民事诉讼',
-    usageCount: 32,
-  },
-  {
-    id: 'template_3',
-    name: '代理词',
-    description: '法庭代理词模板',
-    category: '民事诉讼',
-    usageCount: 28,
-  },
-  {
-    id: 'template_4',
-    name: '证据目录',
-    description: '案件证据目录模板',
-    category: '证据管理',
-    usageCount: 56,
-  },
-]
 </script>
 
 <template>
@@ -71,7 +40,7 @@ const recentTemplates = [
               <div class="flex-1">
                 <h2 class="text-2xl font-bold mb-2">文书自动生成系统</h2>
                 <p class="text-muted-foreground mb-6">
-                  基于案件信息自动生成各类诉讼文书，支持模板管理、可视化编辑和多格式导出。
+                  选择已发布模板版本，审核案件和系统建议值，并生成保存到案件中的 DOCX 文书。
                 </p>
                 <div class="flex flex-wrap gap-3">
                   <Button as="a" href="./document-template-management.html" size="lg">
@@ -97,18 +66,6 @@ const recentTemplates = [
           <DocumentGenerationEntryActions />
         </div>
 
-        <!-- Recent Templates -->
-        <div>
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-semibold">常用模板</h3>
-            <Button variant="ghost" as="a" href="./document-template-preset-list.html" size="sm">
-              查看全部
-              <SafeIcon name="ArrowRight" :size="16" class="ml-2" />
-            </Button>
-          </div>
-          <DocumentGenerationEntryTemplatePreview :templates="recentTemplates" />
-        </div>
-
         <!-- Quick Tips -->
         <div class="mt-12">
           <Card>
@@ -130,11 +87,11 @@ const recentTemplates = [
                 </li>
                 <li class="flex gap-3">
                   <span class="text-primary font-semibold">3.</span>
-                  <span>在预览页面进行必要的编辑和调整</span>
+                  <span>审核系统建议值并补充或修正占位字段</span>
                 </li>
                 <li class="flex gap-3">
                   <span class="text-primary font-semibold">4.</span>
-                  <span>导出为Word或PDF格式，保存到案件记录中</span>
+                  <span>生成完成的 DOCX，保存到案件记录并下载</span>
                 </li>
               </ul>
             </CardContent>

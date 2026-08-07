@@ -1,11 +1,9 @@
 import {
   DocumentGenerationApiError,
-  fetchDocumentTemplates,
-  fetchDocumentTemplateVersion,
-  fetchDocumentTemplateVersions,
   fetchGenerationPreparation,
   postDocumentGeneration,
 } from '@/api/documentGenerationApi'
+import { fetchTemplateVersion, fetchTemplateVersions, fetchTemplates } from '@/services/documentTemplateService'
 import { downloadCaseDocument } from '@/services/documentService'
 import type {
   DocumentFieldSource,
@@ -15,6 +13,7 @@ import type {
   GeneratedDocument,
   GenerationAttempt,
   GenerationContext,
+  GenerationErrorPresentation,
   GenerationFailureAction,
   GenerationPreparation,
   GenerationValidationResult,
@@ -115,12 +114,13 @@ const valueSource = (field: PreparedGenerationField, value: string): DocumentFie
 export function buildGenerationRequest(
   fields: readonly PreparedGenerationField[],
   values: Readonly<Record<string, string>>,
+  sourceOverrides: Readonly<Partial<Record<string, DocumentFieldSource>>> = {},
 ): DocumentGenerationRequest {
   return {
     values: fields.map(field => ({
       fieldKey: field.fieldKey,
       value: values[field.fieldKey],
-      valueSource: valueSource(field, values[field.fieldKey]),
+      valueSource: sourceOverrides[field.fieldKey] ?? valueSource(field, values[field.fieldKey]),
     })),
   }
 }
@@ -130,11 +130,12 @@ export function createGenerationAttempt(
   fields: readonly PreparedGenerationField[],
   values: Readonly<Record<string, string>>,
   createUuid: () => string = () => crypto.randomUUID(),
+  sourceOverrides: Readonly<Partial<Record<string, DocumentFieldSource>>> = {},
 ): GenerationAttempt {
   const validation = validateGenerationValues(fields, values)
   if (!validation.valid) throw new GenerationValidationError(validation)
 
-  const request = buildGenerationRequest(fields, values)
+  const request = buildGenerationRequest(fields, values, sourceOverrides)
   const immutableValues = Object.freeze(
     request.values.map(value => Object.freeze({ ...value })),
   )
@@ -172,24 +173,56 @@ export function classifyGenerationFailure(error: unknown): GenerationFailureActi
   return error.code ? actionByCode[error.code] ?? 'RETRY_EXACT_REQUEST' : 'RETRY_EXACT_REQUEST'
 }
 
+export function presentGenerationError(
+  error: unknown,
+  fields: readonly Pick<PreparedGenerationField, 'fieldKey' | 'displayName'>[],
+  fallbackSummary = '文书生成失败',
+): GenerationErrorPresentation {
+  if (!(error instanceof DocumentGenerationApiError)) {
+    return { summary: fallbackSummary, affectedFields: [] }
+  }
+
+  const detail = typeof error.problem?.detail === 'string'
+    ? error.problem.detail
+    : undefined
+  const fieldKey = typeof error.problem?.details?.fieldKey === 'string'
+    ? error.problem.details.fieldKey
+    : undefined
+  const affectedFields = fieldKey
+    ? [{
+        fieldKey,
+        displayName: fields.find(field => field.fieldKey === fieldKey)?.displayName ?? fieldKey,
+        message: detail ?? fallbackSummary,
+      }]
+    : []
+
+  return {
+    summary: typeof error.problem?.title === 'string'
+      ? error.problem.title
+      : fallbackSummary,
+    detail,
+    affectedFields,
+  }
+}
+
 export const getDocumentTemplates = (
   page = 0,
   size = 20,
-): Promise<PageResponse<DocumentTemplateSummary>> => fetchDocumentTemplates(page, size)
+): Promise<PageResponse<DocumentTemplateSummary>> => fetchTemplates(page, size)
 
 export const getDocumentTemplateVersions = (
   templateId: number,
   page = 0,
   size = 20,
 ): Promise<PageResponse<DocumentTemplateVersionSummary>> => (
-  fetchDocumentTemplateVersions(templateId, page, size)
+  fetchTemplateVersions(templateId, page, size)
 )
 
 export const getDocumentTemplateVersion = (
   templateId: number,
   versionNumber: number,
 ): Promise<PublishedTemplateVersion> => (
-  fetchDocumentTemplateVersion(templateId, versionNumber)
+  fetchTemplateVersion(templateId, versionNumber)
 )
 
 export const prepareDocumentGeneration = (
@@ -202,4 +235,3 @@ export function downloadGeneratedDocument(generated: GeneratedDocument): Promise
   }
   return downloadCaseDocument(generated.caseId, generated.caseDocumentId)
 }
-

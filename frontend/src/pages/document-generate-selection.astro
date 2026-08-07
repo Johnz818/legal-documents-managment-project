@@ -11,9 +11,9 @@ import DocumentGenerateSelectionView from '@/components/document-generate-select
   <CommonHeader client:load />
   <AppSidebarLayout client:load headerHeight="64px">
     <main class="flex-1 flex flex-col">
-      <PageHeader 
+      <PageHeader
         title="选择文书生成"
-        description="选择需要生成文书的案件和使用的模板，系统将自动填充并生成文书初稿"
+        description="选择案件和已发布模板版本，审核全部字段后生成并保存完成的 DOCX"
         breadcrumbs={[
           { label: '文书管理', href: './document-generation-entry.html' },
           { label: '选择文书生成' }

@@ -244,7 +244,9 @@ const formatDateTime = (value: string) => {
               <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <Badge variant="outline">{{ document.fileFormat }}</Badge>
                 <span>{{ formatFileSize(document.fileSize) }}</span>
-                <span>{{ document.documentSource === 'UPLOADED' ? '上传于' : '生成于' }} {{ formatDateTime(document.createdAt) }}</span>
+                <span v-if="document.documentSource === 'UPLOADED'">上传于 {{ formatDateTime(document.createdAt) }}</span>
+                <span v-else-if="document.generatedAt">生成于 {{ formatDateTime(document.generatedAt) }} · 文件编号 #{{ document.id }}</span>
+                <span v-else>生成文书 · 文件编号 #{{ document.id }}</span>
               </div>
             </div>
           </div>

@@ -10,7 +10,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Immutable;
 
 import java.time.LocalDateTime;
@@ -55,7 +54,6 @@ public class DocumentGenerationEntity {
     @Column(name = "request_sha256", nullable = false, length = 64, columnDefinition = "CHAR(64)")
     private String requestSha256;
 
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -68,7 +66,8 @@ public class DocumentGenerationEntity {
             Long caseDocumentId,
             CaseStatus caseStatusSnapshot,
             String idempotencyKey,
-            String requestSha256
+            String requestSha256,
+            LocalDateTime createdAt
     ) {
         this.caseId = caseId;
         this.templateVersionId = templateVersionId;
@@ -76,6 +75,7 @@ public class DocumentGenerationEntity {
         this.caseStatusSnapshot = caseStatusSnapshot;
         this.idempotencyKey = idempotencyKey;
         this.requestSha256 = requestSha256;
+        this.createdAt = createdAt;
     }
 
     public Long getId() {

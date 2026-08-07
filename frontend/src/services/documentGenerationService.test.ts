@@ -1,12 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   DocumentGenerationApiError,
-  fetchDocumentTemplates,
-  fetchDocumentTemplateVersion,
-  fetchDocumentTemplateVersions,
   fetchGenerationPreparation,
   postDocumentGeneration,
 } from '@/api/documentGenerationApi'
+import { fetchTemplateVersion, fetchTemplateVersions, fetchTemplates } from '@/services/documentTemplateService'
 import { downloadCaseDocument } from '@/services/documentService'
 import {
   GenerationValidationError,
@@ -17,6 +15,7 @@ import {
   getDocumentTemplateVersion,
   getDocumentTemplateVersions,
   getDocumentTemplates,
+  presentGenerationError,
   prepareDocumentGeneration,
   submitGenerationAttempt,
   validateGenerationValues,
@@ -34,9 +33,6 @@ vi.mock('@/api/documentGenerationApi', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/api/documentGenerationApi')>()
   return {
     ...original,
-    fetchDocumentTemplates: vi.fn(),
-    fetchDocumentTemplateVersions: vi.fn(),
-    fetchDocumentTemplateVersion: vi.fn(),
     fetchGenerationPreparation: vi.fn(),
     postDocumentGeneration: vi.fn(),
   }
@@ -45,6 +41,16 @@ vi.mock('@/api/documentGenerationApi', async (importOriginal) => {
 vi.mock('@/services/documentService', () => ({
   downloadCaseDocument: vi.fn(),
 }))
+
+vi.mock('@/services/documentTemplateService', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/services/documentTemplateService')>()
+  return {
+    ...original,
+    fetchTemplates: vi.fn(),
+    fetchTemplateVersions: vi.fn(),
+    fetchTemplateVersion: vi.fn(),
+  }
+})
 
 const context: GenerationContext = {
   caseId: 7,
@@ -82,9 +88,9 @@ const generated: GeneratedDocument = {
 
 describe('documentGenerationService', () => {
   beforeEach(() => {
-    vi.mocked(fetchDocumentTemplates).mockReset()
-    vi.mocked(fetchDocumentTemplateVersions).mockReset()
-    vi.mocked(fetchDocumentTemplateVersion).mockReset()
+    vi.mocked(fetchTemplates).mockReset()
+    vi.mocked(fetchTemplateVersions).mockReset()
+    vi.mocked(fetchTemplateVersion).mockReset()
     vi.mocked(fetchGenerationPreparation).mockReset()
     vi.mocked(postDocumentGeneration).mockReset()
     vi.mocked(downloadCaseDocument).mockReset()
@@ -100,9 +106,9 @@ describe('documentGenerationService', () => {
       fields: [],
     } as PublishedTemplateVersion
     const preparation: GenerationPreparation = { ...context, fields: [] }
-    vi.mocked(fetchDocumentTemplates).mockResolvedValue(page)
-    vi.mocked(fetchDocumentTemplateVersions).mockResolvedValue(page)
-    vi.mocked(fetchDocumentTemplateVersion).mockResolvedValue(exactVersion)
+    vi.mocked(fetchTemplates).mockResolvedValue(page)
+    vi.mocked(fetchTemplateVersions).mockResolvedValue(page)
+    vi.mocked(fetchTemplateVersion).mockResolvedValue(exactVersion)
     vi.mocked(fetchGenerationPreparation).mockResolvedValue(preparation)
 
     await expect(getDocumentTemplates()).resolves.toBe(page)
@@ -125,6 +131,14 @@ describe('documentGenerationService', () => {
       suggestedValue: null,
     })], {
       case_number: '(2026)沪01号',
+    }).values[0].valueSource).toBe('USER_INPUT')
+  })
+
+  it('honors an explicit provenance choice made during stale-value review', () => {
+    expect(buildGenerationRequest([field()], {
+      case_number: '(2026)沪01号',
+    }, {
+      case_number: 'USER_INPUT',
     }).values[0].valueSource).toBe('USER_INPUT')
   })
 
@@ -243,6 +257,33 @@ describe('documentGenerationService', () => {
     expect(classifyGenerationFailure(
       new DocumentGenerationApiError('generate', 500, { code: 'UNKNOWN' }),
     )).toBe('RETRY_EXACT_REQUEST')
+  })
+
+  it('presents a controlled backend detail against the matching display field', () => {
+    const presentation = presentGenerationError(
+      new DocumentGenerationApiError('generate', 400, {
+        title: 'Invalid generation value',
+        detail: 'The reviewed case number is no longer current.',
+        code: 'GENERATION_VALUE_STALE',
+        details: { fieldKey: 'case_number' },
+      }),
+      [field()],
+    )
+
+    expect(presentation).toEqual({
+      summary: 'Invalid generation value',
+      detail: 'The reviewed case number is no longer current.',
+      affectedFields: [{
+        fieldKey: 'case_number',
+        displayName: '案号',
+        message: 'The reviewed case number is no longer current.',
+      }],
+    })
+  })
+
+  it('falls back safely when a failure has no controlled backend problem detail', () => {
+    expect(presentGenerationError(new TypeError('network internals'), [], '请求失败'))
+      .toEqual({ summary: '请求失败', affectedFields: [] })
   })
 
   it('downloads only an available generated Case document', async () => {

@@ -26,6 +26,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.DateTimeException;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.zone.ZoneRulesProvider;
 import java.util.Comparator;
 import java.util.HexFormat;
@@ -241,7 +242,8 @@ public class DocumentGenerationService {
         return new GeneratedDocument(
                 generation.getId(), generation.getCaseId(), version.getTemplateId(), version.getVersionNumber(),
                 output == null ? null : output.getId(), output != null,
-                output == null ? null : output.getOriginalFileName(), generation.getCreatedAt()
+                output == null ? null : output.getOriginalFileName(),
+                generation.getCreatedAt().toInstant(ZoneOffset.UTC)
         );
     }
 

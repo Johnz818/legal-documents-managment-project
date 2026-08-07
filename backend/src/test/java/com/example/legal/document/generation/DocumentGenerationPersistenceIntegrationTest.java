@@ -1,6 +1,7 @@
 package com.example.legal.document.generation;
 
 import com.example.legal.document.CaseDocumentRepository;
+import com.example.legal.document.read.CaseDocumentQueryService;
 import com.example.legal.document.template.DocumentFieldDefaultSource;
 import com.example.legal.document.template.DocumentFieldValueType;
 import com.example.legal.document.template.DocumentTemplateEntity;
@@ -26,6 +27,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,6 +53,7 @@ class DocumentGenerationPersistenceIntegrationTest {
     private final DocumentTemplateFieldRepository fieldRepository;
     private final JdbcTemplate jdbcTemplate;
     private final EntityManager entityManager;
+    private final CaseDocumentQueryService caseDocumentQueryService;
 
     @Autowired
     DocumentGenerationPersistenceIntegrationTest(
@@ -62,7 +66,8 @@ class DocumentGenerationPersistenceIntegrationTest {
             DocumentTemplateVersionRepository versionRepository,
             DocumentTemplateFieldRepository fieldRepository,
             JdbcTemplate jdbcTemplate,
-            EntityManager entityManager
+            EntityManager entityManager,
+            CaseDocumentQueryService caseDocumentQueryService
     ) {
         this.persistenceService = persistenceService;
         this.generationRepository = generationRepository;
@@ -74,6 +79,7 @@ class DocumentGenerationPersistenceIntegrationTest {
         this.fieldRepository = fieldRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.entityManager = entityManager;
+        this.caseDocumentQueryService = caseDocumentQueryService;
     }
 
     @BeforeEach
@@ -164,6 +170,11 @@ class DocumentGenerationPersistenceIntegrationTest {
         assertThat(generation.getCaseStatusSnapshot()).isEqualTo(CaseStatus.IN_TRIAL);
         assertThat(generation.getRequestSha256()).isEqualTo("b".repeat(64));
         assertThat(generation.getCreatedAt()).isNotNull();
+        assertThat(caseDocumentQueryService.getCaseDocuments(fixture.caseId()).data())
+                .filteredOn(document -> document.id().equals(generation.getCaseDocumentId()))
+                .singleElement()
+                .satisfies(document -> assertThat(document.generatedAt())
+                        .isEqualTo(generation.getCreatedAt().toInstant(ZoneOffset.UTC)));
         assertThat(values).extracting(GenerationValueEntity::getResolvedValue)
                 .containsExactly("  (2026)沪0115民初1001号  ", "2026年08月05日");
         assertThat(values).extracting(GenerationValueEntity::getValueSource)
@@ -425,7 +436,8 @@ class DocumentGenerationPersistenceIntegrationTest {
                 persisted.caseDocument().getId(),
                 CaseStatus.IN_TRIAL,
                 UUID.randomUUID().toString(),
-                "c".repeat(64)
+                "c".repeat(64),
+                LocalDateTime.of(2026, 8, 7, 0, 0)
         ))).isInstanceOf(DataIntegrityViolationException.class);
     }
 

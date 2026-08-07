@@ -1,20 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   DocumentGenerationApiError,
-  fetchDocumentTemplates,
-  fetchDocumentTemplateVersion,
-  fetchDocumentTemplateVersions,
   fetchGenerationPreparation,
   postDocumentGeneration,
 } from '@/api/documentGenerationApi'
 import type {
-  DocumentTemplateSummary,
-  DocumentTemplateVersionSummary,
   GeneratedDocument,
   GenerationContext,
   GenerationPreparation,
-  PageResponse,
-  PublishedTemplateVersion,
 } from '@/types/documentGeneration'
 
 const context: GenerationContext = {
@@ -46,40 +39,6 @@ describe('documentGenerationApi', () => {
 
   beforeEach(() => {
     vi.stubGlobal('fetch', fetchMock)
-  })
-
-  it('fetches a bounded page of templates', async () => {
-    const page: PageResponse<DocumentTemplateSummary> = {
-      items: [], page: 1, size: 20, totalElements: 21, totalPages: 2,
-    }
-    fetchMock.mockResolvedValue(response(200, page))
-
-    await expect(fetchDocumentTemplates(1, 20)).resolves.toEqual(page)
-    expect(fetchMock).toHaveBeenCalledWith('/api/document-templates?page=1&size=20')
-  })
-
-  it('fetches versions scoped to one template', async () => {
-    const page: PageResponse<DocumentTemplateVersionSummary> = {
-      items: [], page: 0, size: 20, totalElements: 0, totalPages: 0,
-    }
-    fetchMock.mockResolvedValue(response(200, page))
-
-    await expect(fetchDocumentTemplateVersions(11)).resolves.toEqual(page)
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/document-templates/11/versions?page=0&size=20',
-    )
-  })
-
-  it('fetches one exact template version', async () => {
-    const version = {
-      templateId: 11,
-      versionNumber: 2,
-      fields: [],
-    } as PublishedTemplateVersion
-    fetchMock.mockResolvedValue(response(200, version))
-
-    await expect(fetchDocumentTemplateVersion(11, 2)).resolves.toEqual(version)
-    expect(fetchMock).toHaveBeenCalledWith('/api/document-templates/11/versions/2')
   })
 
   it('prepares generation with the exact context and encoded timezone', async () => {
@@ -138,10 +97,10 @@ describe('documentGenerationApi', () => {
     vi.mocked(invalidResponse.json).mockRejectedValue(new SyntaxError('invalid JSON'))
     fetchMock.mockResolvedValue(invalidResponse)
 
-    const error = await fetchDocumentTemplates().catch(value => value)
+    const error = await fetchGenerationPreparation(context).catch(value => value)
 
     expect(error).toBeInstanceOf(DocumentGenerationApiError)
     expect(error).toMatchObject({ status: 503, problem: null })
-    expect(error.message).toBe('Failed to fetch document templates: HTTP 503')
+    expect(error.message).toBe('Failed to prepare document generation for case 7: HTTP 503')
   })
 })

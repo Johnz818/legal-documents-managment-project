@@ -1,16 +1,11 @@
 import type {
   BackendProblemDetail,
   DocumentGenerationRequest,
-  DocumentTemplateSummary,
-  DocumentTemplateVersionSummary,
   GeneratedDocument,
   GenerationContext,
   GenerationPreparation,
-  PageResponse,
-  PublishedTemplateVersion,
 } from '@/types/documentGeneration'
 
-const TEMPLATES_ENDPOINT = '/api/document-templates'
 const CASES_ENDPOINT = '/api/cases'
 
 export class DocumentGenerationApiError extends Error {
@@ -52,45 +47,11 @@ const requireJson = async <T>(response: Response, operation: string): Promise<T>
   return response.json() as Promise<T>
 }
 
-const pageQuery = (page: number, size: number) => new URLSearchParams({
-  page: String(page),
-  size: String(size),
-})
-
 const generationQuery = (context: GenerationContext) => new URLSearchParams({
   templateId: String(context.templateId),
   versionNumber: String(context.versionNumber),
   timezone: context.timezone,
 })
-
-export async function fetchDocumentTemplates(
-  page = 0,
-  size = 20,
-): Promise<PageResponse<DocumentTemplateSummary>> {
-  const response = await fetch(`${TEMPLATES_ENDPOINT}?${pageQuery(page, size)}`)
-  return requireJson(response, 'fetch document templates')
-}
-
-export async function fetchDocumentTemplateVersions(
-  templateId: number,
-  page = 0,
-  size = 20,
-): Promise<PageResponse<DocumentTemplateVersionSummary>> {
-  const response = await fetch(
-    `${TEMPLATES_ENDPOINT}/${templateId}/versions?${pageQuery(page, size)}`,
-  )
-  return requireJson(response, `fetch versions for template ${templateId}`)
-}
-
-export async function fetchDocumentTemplateVersion(
-  templateId: number,
-  versionNumber: number,
-): Promise<PublishedTemplateVersion> {
-  const response = await fetch(
-    `${TEMPLATES_ENDPOINT}/${templateId}/versions/${versionNumber}`,
-  )
-  return requireJson(response, `fetch template ${templateId} version ${versionNumber}`)
-}
 
 export async function fetchGenerationPreparation(
   context: GenerationContext,
@@ -119,4 +80,3 @@ export async function postDocumentGeneration(
   )
   return requireJson(response, `generate document for case ${context.caseId}`)
 }
-

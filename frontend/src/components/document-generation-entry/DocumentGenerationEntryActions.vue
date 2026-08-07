@@ -21,14 +21,14 @@ const actions = [
   {
     id: 'document_generation',
     title: '发起文书生成',
-    description: '选择案件和模板，自动生成文书初稿',
+    description: '选择案件和已发布模板版本，审核字段并生成 DOCX',
     icon: 'FileSignature',
     href: './document-generate-selection.html',
     features: [
       '案件信息自动填充',
-      '文书在线编辑',
-      '多格式导出',
-      '文书保存管理',
+      '人工审核和修正字段',
+      '幂等 DOCX 生成',
+      '案件文书保存与下载',
     ],
   },
 ]

@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.HexFormat;
@@ -51,6 +52,7 @@ class DocumentGenerationServiceTest {
     private static final byte[] TEMPLATE = "template".getBytes(StandardCharsets.UTF_8);
     private static final byte[] OUTPUT = "output".getBytes(StandardCharsets.UTF_8);
     private static final String TIMEZONE = "Asia/Shanghai";
+    private static final LocalDateTime GENERATED_AT_UTC = LocalDateTime.of(2026, 8, 4, 16, 30);
 
     private CaseRepository caseRepository;
     private DocumentTemplateVersionRepository versionRepository;
@@ -122,7 +124,7 @@ class DocumentGenerationServiceTest {
             ReflectionTestUtils.setField(document, "id", 44L);
             DocumentGenerationEntity generation = new DocumentGenerationEntity(
                     command.caseId(), command.templateVersionId(), 44L, command.caseStatusSnapshot(),
-                    command.idempotencyKey(), command.requestSha256()
+                    command.idempotencyKey(), command.requestSha256(), GENERATED_AT_UTC
             );
             ReflectionTestUtils.setField(generation, "id", 55L);
             return new PersistedDocumentGeneration(generation, document, List.of());
@@ -165,7 +167,7 @@ class DocumentGenerationServiceTest {
         service.generate(command(key, originalCaseNumber, GenerationValueSource.CASE_FIELD));
         GenerationPersistenceCommand first = persistedCommand.get();
         DocumentGenerationEntity existing = new DocumentGenerationEntity(
-                7L, 22L, 44L, CaseStatus.IN_TRIAL, key, first.requestSha256()
+                7L, 22L, 44L, CaseStatus.IN_TRIAL, key, first.requestSha256(), GENERATED_AT_UTC
         );
         ReflectionTestUtils.setField(existing, "id", 55L);
         CaseDocumentEntity document = new CaseDocumentEntity(
@@ -183,6 +185,7 @@ class DocumentGenerationServiceTest {
 
         assertThat(replay.generationId()).isEqualTo(55L);
         assertThat(replay.outputAvailable()).isTrue();
+        assertThat(replay.createdAt()).isEqualTo(GENERATED_AT_UTC.toInstant(ZoneOffset.UTC));
     }
 
     @Test
@@ -203,7 +206,7 @@ class DocumentGenerationServiceTest {
         service.generate(original);
         GenerationPersistenceCommand first = persistedCommand.get();
         DocumentGenerationEntity existing = new DocumentGenerationEntity(
-                7L, 22L, 44L, CaseStatus.IN_TRIAL, key, first.requestSha256()
+                7L, 22L, 44L, CaseStatus.IN_TRIAL, key, first.requestSha256(), GENERATED_AT_UTC
         );
         ReflectionTestUtils.setField(existing, "id", 56L);
         CaseDocumentEntity document = new CaseDocumentEntity(
@@ -219,13 +222,14 @@ class DocumentGenerationServiceTest {
 
         assertThat(replay.generationId()).isEqualTo(56L);
         assertThat(replay.outputAvailable()).isTrue();
+        assertThat(replay.createdAt()).isEqualTo(GENERATED_AT_UTC.toInstant(ZoneOffset.UTC));
     }
 
     @Test
     void sameIdempotencyKeyWithDifferentRequestConflicts() {
         String key = UUID.randomUUID().toString();
         DocumentGenerationEntity existing = new DocumentGenerationEntity(
-                7L, 22L, 44L, CaseStatus.IN_TRIAL, key, "a".repeat(64)
+                7L, 22L, 44L, CaseStatus.IN_TRIAL, key, "a".repeat(64), GENERATED_AT_UTC
         );
         when(generationRepository.findByIdempotencyKey(key)).thenReturn(Optional.of(existing));
 
@@ -278,7 +282,7 @@ class DocumentGenerationServiceTest {
         doAnswer(invocation -> {
             GenerationPersistenceCommand command = invocation.getArgument(0);
             DocumentGenerationEntity winner = new DocumentGenerationEntity(
-                    7L, 22L, 44L, CaseStatus.IN_TRIAL, key, command.requestSha256()
+                    7L, 22L, 44L, CaseStatus.IN_TRIAL, key, command.requestSha256(), GENERATED_AT_UTC
             );
             ReflectionTestUtils.setField(winner, "id", 88L);
             when(generationRepository.findByIdempotencyKey(key)).thenReturn(Optional.of(winner));

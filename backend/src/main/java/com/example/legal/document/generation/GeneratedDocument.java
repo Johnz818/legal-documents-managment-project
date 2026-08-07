@@ -1,6 +1,8 @@
 package com.example.legal.document.generation;
 
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import java.time.Instant;
 
 public record GeneratedDocument(
         Long generationId,
@@ -10,6 +12,6 @@ public record GeneratedDocument(
         Long caseDocumentId,
         boolean outputAvailable,
         String fileName,
-        LocalDateTime createdAt
+        @JsonFormat(shape = JsonFormat.Shape.STRING) Instant createdAt
 ) {
 }
