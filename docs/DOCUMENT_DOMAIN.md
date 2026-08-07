@@ -283,12 +283,9 @@ relationships.
 Status legend:
 
 - `[implemented]` exists in the repository now;
-- `[Phase 5 planned model]` is a domain record planned for the deterministic
-  vertical slice;
-- `[Phase 5 planned record]` is a new instance of an already implemented model;
-- `[Phase 5 acquisition channel]` supplies a value but is not a separate domain
+- `[implemented acquisition channel]` supplies a value but is not a separate domain
   entity;
-- `[Phase 5 planned capability]` is application behavior rather than a domain
+- `[implemented capability]` is application behavior rather than a domain
   record;
 - `[future conceptual model]` is a likely future business concept whose schema
   is not yet accepted;
@@ -323,12 +320,12 @@ PUBLISHED REUSABLE CORE
                                                     v
 GENERATION SIDE
 
-[implemented] Case ──────────────────────> [Phase 5 planned capability]
+[implemented] Case ──────────────────────> [implemented capability]
                                            Document Generation process
                                                    |
-[Phase 5 acquisition channel] Case field ──────────┤
-[Phase 5 acquisition channel] System value ────────┼──> [Phase 5 planned model]
-[Phase 5 acquisition channel] Explicit user input ─┘    GenerationValue
+[implemented acquisition channel] Case field ──────────┤
+[implemented acquisition channel] System value ────────┼──> [implemented]
+[implemented acquisition channel] Explicit user input ─┘    GenerationValue
                                                              ^
                                                              |
 [future conceptual model] EvidenceCandidate ────────────────┘
@@ -336,18 +333,18 @@ GENERATION SIDE
     | page/confidence
     | human review
 
-  [Phase 5 planned capability] DocumentGenerationService
+  [implemented capability] DocumentGenerationService
       |
       +── renderer ──> generated DOCX binary ──> [implemented] DocumentStorage
       |
-      +── file metadata ──────────────────────> [Phase 5 planned record]
+      +── file metadata ──────────────────────> [implemented]
       |                                         generated instance of the
       |                                         implemented CaseDocument model
       |                                             |
       |                                             +── references ──>
       |                                                 stored DOCX binary
       |
-      +── generation metadata ────────────────> [Phase 5 planned model]
+      +── generation metadata ────────────────> [implemented]
                                                 GenerationRecord
                                                     |
                                                     +── result ──>

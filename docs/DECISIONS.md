@@ -1019,11 +1019,49 @@ cascade deletion is not an adequate storage workflow.
 
 ---
 
+## 2026-08-07
+
+### D-031
+
+Status: Accepted; completes G5 and the Phase 5 deterministic vertical slice
+
+G5 replaces the active template-management and document-generation mock flows
+with live frontend journeys. Template management lists published templates and
+immutable versions, inspects DOCX markers, guides human-confirmed mappings,
+publishes new or later `CUSTOM` versions, downloads exact version content, and
+hands an exact template version to generation. Generation selects a live Case
+and exact version, prepares values using the browser-detected IANA timezone,
+requires human review and scalar validation, handles stale deterministic values
+without discarding manual corrections, and issues one idempotent generation
+request. Exact retry preserves the immutable body and `Idempotency-Key`; return
+to editing creates a new operation and key.
+
+The generation response exposes its successful event time as an explicit UTC
+instant. Generated Case-document summaries expose that same generation event
+time when traceability exists, and the frontend renders it in the browser
+timezone with the Case-document ID as a stable secondary discriminator. This
+is a G5 containment for a factually correct generated-document time, not a
+system-wide timestamp policy. Existing timezone-less timestamps retain their
+current contracts until the dedicated P1 migration in
+`ENGINEERING_BACKLOG.md` audits persistence, historical data, APIs, ordering,
+and all frontend consumers in one independently reviewed change. Date-only
+legal values remain distinct from event timestamps.
+
+G5 does not introduce browser DOCX editing, mutable reusable-template drafts,
+Case-specific generated-document drafts/revisions/finalization, OCR,
+evidence-derived candidates, AI assistance, authentication, or authorization.
+Those remain separately scoped additive work. Phase 5 is complete after its
+automated suites and manual generation/remediation and template-management
+acceptance journeys pass.
+
+---
+
 ## Future considerations (TODO)
 
 - Evaluate Flyway compatibility with MySQL 9.7.
 - Define an index strategy based on future query patterns.
-- Define a timezone policy for persistence timestamps.
+- Complete the dedicated system-wide UTC instant migration tracked as
+  `INV-001` in `ENGINEERING_BACKLOG.md`.
 - After the User domain is finalized, replace the temporary lead-lawyer dropdown with a searchable system-user selector. The backend must validate that the selected user exists, is active, and is eligible to lead cases; decide the user relationship and retained lawyer-name snapshot together with the supporting-member model.
 - Define a legally appropriate retention and restricted permanent-purge policy, including related-document cleanup.
 - Select a malware-scanning approach and failure/quarantine policy before accepting untrusted production uploads.
