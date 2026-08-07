@@ -643,14 +643,17 @@ Case List displays live scalar case information and supports API-backed filterin
 
 Case Detail displays and updates live scalar case information. Updates use optimistic locking so an older edit cannot silently overwrite a newer change. Users can archive and restore cases, and archived cases are discoverable through the Case List archive-state selector. Its Case file section lists, uploads, and downloads live PDF and Word files. Reminders remain mock-backed, and supporting members are shown as not yet available. Tags and supporting members are not synthesized from legacy case mocks.
 
-The backend now persists stable Document Template identities, immutable version
-metadata, and version-owned field definitions. It can inspect controlled DOCX
-markers, normalize human-confirmed mappings, publish immutable `CUSTOM`
-template versions, list templates and versions, and download exact published
-content. Deterministic DOCX rendering is implemented and independently tested;
-generation orchestration and preview/editing are not yet implemented, so the
-related frontend journeys continue to use legacy mock models. Generated
-mock documents are not presented as persisted Case files.
+The application now persists stable Document Template identities, immutable
+version metadata, and version-owned field definitions. The live template
+management frontend inspects controlled DOCX markers, guides human-confirmed
+mappings, publishes immutable `CUSTOM` template versions, lists templates and
+versions, and downloads exact published content. The live generation frontend
+selects a Case and exact version, prepares and reviews Case/system/manual
+values, performs idempotent deterministic generation, and downloads the
+persisted generated Case Document. Generated-event timestamps use an explicit
+UTC instant contract and are displayed in the browser timezone; the broader
+system timestamp migration is tracked separately. Browser DOCX preview/editing
+is not implemented.
 
 The manual Case creation page submits the approved scalar model to the backend Case creation API. Lead lawyers still come from the temporary frontend user dataset and are persisted as name snapshots until the User domain is implemented.
 
@@ -672,12 +675,15 @@ Legacy mock models must not automatically be treated as backend entities. Each f
   version-owned structured field definitions.
 - Inspect, normalize, publish, list, retrieve, and download controlled DOCX
   template versions through the backend API.
+- Manage published templates and versions through the live frontend.
+- Prepare and review deterministic values, generate idempotently, and download
+  persisted generated DOCX Case Documents through the live frontend.
 
 ### Planned user journeys
 
 1. Assign user-backed supporting members and organize cases with tags.
 2. Work with case-related reminders using live data.
-3. Generate and review persisted documents from structured templates.
+3. Review and edit Case-specific generated drafts in a future browser editor.
 4. Access case capabilities through authenticated and authorized user accounts.
 
 ## Product Rules
@@ -692,8 +698,8 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 
 - Case List bulk actions are not connected to backend capabilities.
 - Case tags and supporting members are not yet represented by backend relationship models or APIs.
-- Case-related reminders remain mock-backed; document-generation persistence is
-  limited to the completed template foundation and has not yet reached live
-  publication or generation APIs.
+- Case-related reminders remain mock-backed.
+- Browser DOCX editing, persisted draft/revision/finalization, OCR,
+  evidence-derived suggestions, and AI assistance remain outside Phase 5.
 - Authentication and authorization are not implemented.
 - Audit-log behavior is represented in navigation and permissions but is not implemented.

@@ -1,4 +1,9 @@
-# Phase 5 — Document Generation Handoff
+# Phase 5 — Document Generation Handoff (Deprecated / Historical)
+
+> **Historical document:** Phase 5 and G1–G5 are complete. Do not use this file
+> as current architecture authority or as the starting context for later
+> phases. Current requirements and decisions live in `PRODUCT.md`,
+> `DOCUMENT_DOMAIN.md`, `DECISIONS.md`, and `ROADMAP.md`.
 
 ## Purpose of this document
 
@@ -7,19 +12,14 @@ current repository state, and unresolved decisions for Phase 5. It is a handoff
 for continuing the work in a new conversation; it does not replace
 `PRODUCT.md`, `DOCUMENT_DOMAIN.md`, `DECISIONS.md`, or `ROADMAP.md`.
 
-Lifecycle: this handoff is active only while Phase 5 is in progress. Before
-Phase 5 is declared complete, every lasting product goal, domain rule, accepted
-decision, and future roadmap item must be present in `PRODUCT.md`,
-`DOCUMENT_DOMAIN.md`, `DECISIONS.md`, or `ROADMAP.md`. At Phase 5 completion,
-mark this file deprecated and stop using it as an architecture authority or the
-starting context for later phases. Retain it only as historical delivery
-context unless the repository's documentation-retention policy later removes
-it.
+Lifecycle: deprecated after Phase 5 completion on 2026-08-07. Lasting product
+goals, domain rules, accepted decisions, and future roadmap items have been
+synchronized to the authoritative project documents. This file is retained
+only as historical delivery context.
 
-G1 — Template persistence, G2 — Template API, G3 — DOCX renderer, and G4 —
-Document generation are implemented. The next planned ticket is **G5 —
-Frontend integration**. The live frontend generation journey is not yet
-implemented, so Phase 5 remains in progress.
+G1 — Template persistence, G2 — Template API, G3 — DOCX renderer, G4 —
+Document generation, and G5 — Frontend integration are implemented and
+verified. Phase 5 is complete for its approved deterministic vertical slice.
 
 The guiding delivery rule is:
 
@@ -106,8 +106,8 @@ The accepted technical boundary supporting that user journey is:
 - deterministic value acquisition and DOCX rendering;
 - binary content outside MySQL through the existing `DocumentStorage` boundary;
 - Case-document metadata and generation traceability in MySQL;
-- backend capabilities delivered before the related frontend mock flow is
-  migrated.
+- backend capabilities integrated through live template-management and
+  generation frontend journeys.
 
 ### 1.4 Deferred capabilities and technical approaches
 
@@ -272,11 +272,11 @@ One Case may own many Case documents. A Case document belongs to one Case only. 
 
 The existing metadata includes the Case ID, original filename, backend-generated storage key, source, technical format, content type, size, and timestamps. The binary content is stored outside MySQL.
 
-### 2.2 Implemented publication foundation and planned generation concepts
+### 2.2 Implemented publication and generation concepts
 
 #### DocumentTemplate
 
-A stable reusable identity representing the business template, such as `授权委托书` or `民事起诉状`. The implemented model can represent `PRESET` and `CUSTOM`, but the Phase 5 public creation API will create only `CUSTOM`. `PRESET` authoring remains unavailable until administrator identity and authorization exist. The stable identity groups its published versions; it is not itself a generated Case document.
+A stable reusable identity representing the business template, such as `授权委托书` or `民事起诉状`. The implemented model can represent `PRESET` and `CUSTOM`, but the Phase 5 public creation API creates only `CUSTOM`. `PRESET` authoring remains unavailable until administrator identity and authorization exist. The stable identity groups its published versions; it is not itself a generated Case document.
 
 #### DocumentTemplateVersion
 
@@ -336,9 +336,9 @@ Values used for a specific generation are separate from template field definitio
 
 Future extracted values—not template fields—must carry the suggested value, source document and page, confidence, and human-review state.
 
-G4 must give Generation Values stable relational identities so those future
-candidate, provenance, and review records can attach additively. It must not
-add unused OCR or AI columns now. When Case data, evidence, and manual input
+G4 gives Generation Values stable relational identities so those future
+candidate, provenance, and review records can attach additively. It does not
+add unused OCR or AI columns. When Case data, evidence, and manual input
 disagree, the future review experience shows alternatives rather than applying
 hidden source precedence. A file uploaded during generation should normally
 become a Case Document so provenance has a stable source identity.
@@ -403,7 +403,7 @@ retaining successful traceability.
 - **Canonical placeholder:** the ASCII token such as `{{case_number}}` produced
   after mapping, or retained when published content is used to prepare a later
   version. It must map to its own key.
-- **Template field / field definition:** metadata declaring a value required or accepted by one template version. “Template variable” is legacy frontend terminology; Phase 5 uses “template field” for the planned domain model.
+- **Template field / field definition:** metadata declaring a value required or accepted by one template version. “Template variable” is legacy frontend terminology; Phase 5 uses “template field” for the implemented domain model.
 - **Generation value:** the value supplied for one field in one generation; it is not part of the reusable field definition.
 - **Value acquisition:** obtaining a value from a Case, the system, user input, or a future extraction suggestion.
 - **Rendering:** deterministic replacement of approved values in the DOCX.
@@ -565,24 +565,20 @@ finalization transition that cannot store a revised document.
   workflow covering preparation, generated-DOCX download, idempotent replay,
   stale values, key conflicts, and invalid input.
 
-### 4.2 Present only as frontend mocks
+### 4.2 Live frontend integration
 
-The frontend currently contains mock-backed pages and models for:
-
-- template management;
-- preset-template listing;
-- custom-template creation/editing;
-- template and Case selection;
-- generation entry;
-- preview/edit;
-- generated documents.
-
-`frontend/src/data/document.ts` currently simulates templates, variables, and text replacement. These models are legacy UI mocks, not approved backend API contracts or persistence models. They must not be reused as backend contracts without a ticket-specific migration review.
+The active template-management and generation journeys use the approved live
+APIs for paginated template/version discovery, DOCX inspection and publication,
+exact-version handoff, Case selection, value preparation/review, idempotent
+generation, generated Case-document download, and controlled recovery. Legacy
+mock files may remain for unrelated or inactive prototype pages; they are not
+approved backend contracts and must not be treated as domain models.
 
 ### 4.3 Not implemented
 
-- live frontend integration for template or generation screens;
-- text extraction, OCR, AI, provenance, confidence, or evidence-review workflow.
+- browser DOCX editing and Case-specific drafts/revisions/finalization;
+- text extraction, OCR, AI, provenance, confidence, or evidence-review workflow;
+- authentication and authorization.
 
 ## 5. Resolved boundaries and open design questions
 
@@ -667,7 +663,7 @@ The representative source files discussed previously are external legal examples
 - Storage and MySQL use synchronous best-effort compensation, with process-crash
   orphans accepted until evidence justifies reconciliation.
 
-The planned persistence contract is:
+The implemented persistence contract is:
 
 ```text
 document_generations
@@ -809,18 +805,21 @@ deferred rather than adding speculative extraction columns.
 
 Commit: `feat: generate case documents`
 
-### G5 — Frontend integration
+### G5 — Frontend integration (complete)
 
-Replace only the relevant template and generation mock flow with live input
-preparation, browser-detected IANA timezone, human value review, idempotent
-generation, derived output availability, and generated-document download. Keep
-unrelated mock-backed modules unchanged. Browser-based document editing,
-persisted revisions, and explicit finalization remain future work inserted
-between rendering and completed-output storage.
+The relevant template-management and generation mock flows are replaced with
+live template inspection/publication/version management, input preparation,
+browser-detected IANA timezone, human value review, stale-value conflict
+resolution, idempotent generation and exact retry, derived output availability,
+generated-document download, and generated-event time displayed in the browser
+timezone. Unrelated mock-backed modules remain unchanged. Browser-based DOCX
+editing, persisted revisions, and explicit finalization remain future work
+inserted between rendering and completed-output storage.
 
-Suggested commit: `feat: integrate document generation`
+Implementation verified by backend/frontend automated suites and manual G5
+remediation and live-template-management acceptance testing.
 
-### After G5
+### After Phase 5
 
 Complete minimum security, cloud deployment, and the required reliability
 baseline before expanding the Phase 5 vertical slice into browser template
