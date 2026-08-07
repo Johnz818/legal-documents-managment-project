@@ -6,14 +6,19 @@ import com.example.legal.document.DocumentFormat;
 import com.example.legal.document.DocumentSource;
 import com.example.legal.document.storage.DocumentStorage;
 import com.example.legal.document.storage.DocumentStorageException;
+import com.example.legal.document.generation.CaseDocumentGenerationTimestamp;
+import com.example.legal.document.generation.DocumentGenerationRepository;
 import com.example.legal.legalcase.CaseRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,6 +37,8 @@ class CaseDocumentQueryServiceTest {
     private CaseDocumentRepository documentRepository;
     @Mock
     private DocumentStorage documentStorage;
+    @Mock
+    private DocumentGenerationRepository generationRepository;
 
     private CaseDocumentQueryService service;
 
@@ -40,7 +47,8 @@ class CaseDocumentQueryServiceTest {
         service = new CaseDocumentQueryService(
                 caseRepository,
                 documentRepository,
-                documentStorage
+                documentStorage,
+                generationRepository
         );
     }
 
@@ -60,6 +68,50 @@ class CaseDocumentQueryServiceTest {
         assertThat(response.data().getFirst().caseId()).isEqualTo(7L);
         assertThat(response.data().getFirst().documentSource()).isEqualTo(DocumentSource.UPLOADED);
         assertThat(response.data().getFirst().fileFormat()).isEqualTo(DocumentFormat.PDF);
+        assertThat(response.data().getFirst().generatedAt()).isNull();
+        verify(generationRepository, never()).findCaseDocumentTimestamps(7L, List.of());
+    }
+
+    @Test
+    void mapsVerifiedUtcGenerationTimestampWithOneBoundedLookup() {
+        CaseDocumentEntity generated = new CaseDocumentEntity(
+                7L, "generated.docx", "documents/generated", DocumentSource.GENERATED,
+                DocumentFormat.DOCX,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 9
+        );
+        ReflectionTestUtils.setField(generated, "id", 44L);
+        CaseDocumentGenerationTimestamp timestamp = org.mockito.Mockito.mock(
+                CaseDocumentGenerationTimestamp.class
+        );
+        when(timestamp.getCaseDocumentId()).thenReturn(44L);
+        when(timestamp.getCreatedAt()).thenReturn(LocalDateTime.of(2026, 8, 6, 16, 20));
+        when(caseRepository.existsById(7L)).thenReturn(true);
+        when(documentRepository.findAllByCaseIdOrderByCreatedAtDescIdDesc(7L))
+                .thenReturn(List.of(generated));
+        when(generationRepository.findCaseDocumentTimestamps(7L, List.of(44L)))
+                .thenReturn(List.of(timestamp));
+
+        CaseDocumentSummaryResponse summary = service.getCaseDocuments(7L).data().getFirst();
+
+        assertThat(summary.generatedAt()).isEqualTo(Instant.parse("2026-08-06T16:20:00Z"));
+        verify(generationRepository).findCaseDocumentTimestamps(7L, List.of(44L));
+    }
+
+    @Test
+    void leavesGeneratedAtAbsentWhenHistoricalGenerationMetadataIsUnavailable() {
+        CaseDocumentEntity generated = new CaseDocumentEntity(
+                7L, "historical.docx", "documents/historical", DocumentSource.GENERATED,
+                DocumentFormat.DOCX,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 9
+        );
+        ReflectionTestUtils.setField(generated, "id", 45L);
+        when(caseRepository.existsById(7L)).thenReturn(true);
+        when(documentRepository.findAllByCaseIdOrderByCreatedAtDescIdDesc(7L))
+                .thenReturn(List.of(generated));
+        when(generationRepository.findCaseDocumentTimestamps(7L, List.of(45L)))
+                .thenReturn(List.of());
+
+        assertThat(service.getCaseDocuments(7L).data().getFirst().generatedAt()).isNull();
     }
 
     @Test
@@ -80,6 +132,7 @@ class CaseDocumentQueryServiceTest {
 
         verify(documentRepository, never())
                 .findAllByCaseIdOrderByCreatedAtDescIdDesc(99L);
+        verify(generationRepository, never()).findCaseDocumentTimestamps(99L, List.of());
     }
 
     @Test

@@ -18,6 +18,7 @@ const documentSummary: CaseDocumentSummaryResponse = {
   fileSize: 12,
   createdAt: '2026-07-29T10:00:00',
   updatedAt: '2026-07-29T10:00:00',
+  generatedAt: null,
 }
 
 const response = (

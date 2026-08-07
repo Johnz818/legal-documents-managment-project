@@ -14,6 +14,7 @@ export default getViteConfig({
         'src/services/**/*.ts',
         'src/components/case-list-view/**/*.vue',
         'src/components/case-detail-view/CaseDetailDocuments.vue',
+        'src/components/document-generate-selection/**/*.vue',
       ],
     },
   },

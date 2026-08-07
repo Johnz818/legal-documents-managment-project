@@ -8,6 +8,9 @@ import com.example.legal.document.template.DocumentTemplateFieldRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -20,22 +23,26 @@ public class DocumentGenerationPersistenceService {
     private final DocumentGenerationRepository generationRepository;
     private final GenerationValueRepository valueRepository;
     private final DocumentTemplateFieldRepository templateFieldRepository;
+    private final Clock clock;
 
     public DocumentGenerationPersistenceService(
             CaseDocumentRepository caseDocumentRepository,
             DocumentGenerationRepository generationRepository,
             GenerationValueRepository valueRepository,
-            DocumentTemplateFieldRepository templateFieldRepository
+            DocumentTemplateFieldRepository templateFieldRepository,
+            Clock clock
     ) {
         this.caseDocumentRepository = caseDocumentRepository;
         this.generationRepository = generationRepository;
         this.valueRepository = valueRepository;
         this.templateFieldRepository = templateFieldRepository;
+        this.clock = clock;
     }
 
     @Transactional
     public PersistedDocumentGeneration persist(GenerationPersistenceCommand command) {
         validateTemplateFields(command);
+        LocalDateTime generatedAtUtc = LocalDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
         CaseDocumentEntity caseDocument = caseDocumentRepository.saveAndFlush(new CaseDocumentEntity(
                 command.caseId(),
                 command.fileName(),
@@ -53,7 +60,8 @@ public class DocumentGenerationPersistenceService {
                         caseDocument.getId(),
                         command.caseStatusSnapshot(),
                         command.idempotencyKey(),
-                        command.requestSha256()
+                        command.requestSha256(),
+                        generatedAtUtc
                 )
         );
 

@@ -13,7 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,7 +56,7 @@ class DocumentGenerationControllerTest {
     void generatesWithRequiredIdempotencyHeader() throws Exception {
         String key = UUID.randomUUID().toString();
         when(service.generate(any(DocumentGenerationCommand.class))).thenReturn(new GeneratedDocument(
-                55L, 7L, 11L, 2, 44L, true, "generated.docx", LocalDateTime.of(2026, 8, 5, 10, 0)
+                55L, 7L, 11L, 2, 44L, true, "generated.docx", Instant.parse("2026-08-05T10:00:00Z")
         ));
 
         mockMvc.perform(post("/api/cases/7/document-generations")
@@ -74,7 +74,8 @@ class DocumentGenerationControllerTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.generationId").value(55))
-                .andExpect(jsonPath("$.outputAvailable").value(true));
+                .andExpect(jsonPath("$.outputAvailable").value(true))
+                .andExpect(jsonPath("$.createdAt").value("2026-08-05T10:00:00Z"));
     }
 
     @Test

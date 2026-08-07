@@ -12,6 +12,7 @@ export interface CaseDocumentSummaryResponse {
   fileSize: number
   createdAt: string
   updatedAt: string
+  generatedAt: string | null
 }
 
 export interface CaseDocumentListResponse {
