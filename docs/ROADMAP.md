@@ -35,7 +35,7 @@ Current engineering gaps:
 | Phase 3 — Containerization | Complete for the approved local-development scope | C1 and C2 provide non-root backend and frontend images; C3 connects them to isolated MySQL 9.7.1 with persistent database and document volumes. | Begin CI1, the application verification workflow. |
 | Phase 4 — Continuous Integration | Complete for verification scope; publishing deferred | CI1 and CI2 are complete: application verification and both application-owned image builds pass on GitHub. CI3 remains tracked but depends on an approved deployment architecture. | Resume CI3 after P1 selects the deployment platform and registry. |
 | Phase 5 — Minimal Document Generation | Complete for the approved deterministic vertical slice | G1–G5 provide immutable template publication, deterministic rendering, synchronous idempotent generation, live template management, human value review, generated Case-document download, and successful traceability. Automated verification and both generation and template-management manual acceptance suites pass. | Begin Phase 6 minimum security; track deferred improvements in `ENGINEERING_BACKLOG.md`. |
-| Phase 6 — Minimum Security | Not started | User, authentication, and backend authorization remain unimplemented. | Complete before a customer-data deployment. |
+| Phase 6 — Minimum Security | In progress; Phase 6A architecture accepted | The fixed-role, OIDC/session, Case-relationship, actor-attribution, and authorization contract is recorded in D-032. Implementation remains outstanding. | Deliver Phase 6A incrementally; defer invitation and complete user administration to Phase 6B. |
 | Phase 7 — Cloud Deployment | Not started | Hosting and production architecture are not selected. | Begin after CI and minimum security decisions. |
 | Phase 8 — Reliability and Performance | Not started | No operational baseline exists. | Begin after a staging deployment is reproducible. |
 
@@ -158,10 +158,30 @@ Existing renderer and CaseDocument storage boundary
 
 ### Phase 6 — Minimum Security
 
-- Implement the User and role domain.
-- Add authentication.
-- Enforce backend authorization for Case mutations and document operations.
-- Integrate authentication into the frontend.
+- Phase 6A establishes fixed application Users/Roles, external OIDC identity
+  binding, JDBC-backed application sessions, CSRF protection, user-backed Case
+  relationships, document/generation actors, backend authorization, and the
+  minimum frontend authentication and permission experience.
+- Phase 6B adds invitation registration, complete user administration, role
+  and status mutation, and administrator assignment workflows.
+
+The application does not store passwords. Local integration uses Keycloak as
+the OIDC provider while preserving a provider-neutral `(issuer, subject)`
+identity binding for a later cloud IDaaS migration. Business roles remain in
+the application rather than the identity provider.
+
+Phase 6A is ordered by dependency:
+
+```text
+security decisions and policy matrix
+  -> User/Role/Identity persistence
+  -> Case relationships and legacy assignment
+  -> document/generation actor attribution
+  -> backend/frontend OIDC + Session + CSRF vertical slice
+  -> backend authorization
+  -> permission-aware frontend workflows
+  -> integrated security acceptance
+```
 
 Minimum security precedes public deployment. An earlier demonstration
 environment may use synthetic data only and must restrict or disable unauthenticated
@@ -194,7 +214,7 @@ mutation operations.
 | Phase 3 — Containerization | Build each image from a clean context; verify non-root backend execution; start a fresh Compose environment; confirm Flyway startup, service health, frontend-to-backend routing, persistent database/file volumes, and restart behavior. |
 | Phase 4 — Continuous Integration | Run all backend, frontend, database, coverage, and image checks from a clean checkout; verify dependency caching does not hide missing setup; confirm failures block merging and successful builds produce reproducible results. |
 | Phase 5 — Minimal Document Generation | Test template/version persistence against MySQL; use representative DOCX fixtures for placeholders split across formatting runs and tables; verify missing/extra input handling, exact reviewed-value rendering, idempotent generation, template-content integrity, compensation, immutable version traceability, and frontend review/error states. |
-| Phase 6 — Minimum Security | Test valid and invalid login, disabled users, expiry/logout, and password handling; exercise every protected operation as allowed, unauthenticated, and forbidden roles; verify frontend protected navigation without treating UI visibility as authorization. |
+| Phase 6 — Minimum Security | Test OIDC login and identity binding, disabled users, Session expiry/logout, CSRF, and provider failure; exercise every protected operation as allowed, unauthenticated, and forbidden across role/Case-relationship combinations; test legacy Case assignment, actor ownership, ID tampering, and frontend protected navigation without treating UI visibility as authorization. Preserve the complete Phase 5 generation journey. |
 | Phase 7 — Cloud Deployment | Validate production configuration without exposing secrets; run migrations against staging; verify TLS, CORS/routing, object storage, upload/download, synthetic end-to-end journeys, restart behavior, and a rehearsed rollback. |
 | Phase 8 — Reliability and Performance | Verify health/readiness and metrics during dependency failures; rehearse database and object-storage restoration; run repeatable k6 workloads with realistic synthetic volume; compare query plans and latency before and after any optimization. |
 
@@ -224,7 +244,7 @@ but combining ticket boundaries requires a separate scope review.
 | D5 — Document upload API (complete) | Upload validated PDF, DOC, and DOCX files up to 5 MB against an existing Case with compensating cleanup. | API tests for success, missing Case, invalid type, oversize file, and cleanup failure paths. | `feat: add case document upload API` |
 | D6 — Document read APIs (complete) | List Case documents and download content with safe response metadata. | API tests for list, download, empty result, and missing resources. | `feat: add case document read APIs` |
 | D7 — Frontend document integration (complete) | Replace only the Case Detail document mock flow with live upload, list, and download behavior. | Frontend tests and manual loading, empty, error, upload, and download checks. | `feat: integrate case documents` |
-| D8 — Case document removal (complete) | Permanently remove a Case document from metadata and binary storage with explicit confirmation. Future authorization is based on Case edit permission rather than document origin; retention-controlled purge remains a separate lifecycle concern. | Service/API tests for ownership, missing resources, metadata/storage consistency, and failures; frontend confirmation, success refresh, and error-state tests. | `feat: remove case documents` |
+| D8 — Case document removal (complete) | Permanently remove a Case document from metadata and binary storage with explicit confirmation. D-032 now defines Phase 6A authorization from the current Case relationship and document creator; retention-controlled purge remains a separate lifecycle concern. | Service/API tests for ownership, missing resources, metadata/storage consistency, and failures; frontend confirmation, success refresh, and error-state tests. | `feat: remove case documents` |
 
 ### Phase 3 — Containerization
 
@@ -286,10 +306,30 @@ Later tickets have explicit decision gates:
 
 | Ticket | Outcome | Verification | Suggested commit summary |
 | --- | --- | --- | --- |
-| S1 — User and role domain | Persist active users, secure password hashes, and a minimal role model; finalize lawyer relationships. | Flyway, repository, and domain tests against MySQL. | `feat: add user and role domain` |
-| S2 — Authentication | Authenticate users using the approved session or token design. | Successful, invalid, disabled-user, and expiry integration tests. | `feat: add user authentication` |
-| S3 — Backend authorization | Protect Case mutations and document operations with backend-enforced permissions. | Allowed, unauthenticated, and forbidden API tests. | `feat: authorize case operations` |
-| S4 — Frontend authentication | Add login, session handling, protected navigation, and unauthorized-state handling. | Frontend tests and authenticated browser journey. | `feat: integrate frontend authentication` |
+| S0 — Phase 6A security decisions | Record the fixed-role model, OIDC/session boundary, authorization matrix, legacy-data transition, actor rules, and Phase 6A/6B scope. | Documentation diff and senior design review. | `docs: define phase 6a security architecture` |
+| S1 — User, role, and external identity domain | Persist application Users, fixed multi-valued roles, and unique provider-neutral `(issuer, subject)` bindings without application passwords. Provide synthetic local/test bootstrap data but no role/status mutation API. | Flyway, repository, constraint, role-loading, and ACTIVE/DISABLED tests against MySQL. | `feat: add user identity and fixed roles` |
+| S2 — Case lawyer relationships | Add a nullable User-backed lead relationship, supporting members, dedicated versioned team commands, and a minimal administrator path for assigning legacy Cases without matching names automatically. | MySQL and service tests for eligibility, overlap, stale versions, archived Cases, legacy assignment, and retained lead-name snapshots. | `feat: add case lawyer assignments` |
+| S3 — Document actors | Record backend-supplied Case-document creators and successful-generation initiators while preserving nullable legacy rows and Phase 5 idempotency. | Upload, generation, migration, idempotency, and actor-spoofing tests. | `feat: record document operation actors` |
+| S4 — Authentication vertical slice | Add Keycloak-backed OIDC Authorization Code login, JDBC Session, current-user/logout APIs, ACTIVE-user checks, CSRF, required proxy configuration, and the minimum frontend Session/CSRF client together so existing mutations remain usable. | Mock-OIDC and Session integration tests plus Compose login, logout, CSRF, disabled-user, expiry, and frontend mutation smoke tests. | `feat: add oidc authentication and frontend session` |
+| S5 — Backend authorization | Enforce D-032 across Case, team, document, generation, and template operations using current database roles, relationships, archive state, and document creator. | Parameterized allowed/401/403/404, ownership, archive-state, and resource-ID tampering tests. | `feat: authorize case and document workflows` |
+| S6 — Permission-aware frontend | Add protected navigation, controlled 401/403 presentation, real Case-team controls, minimal legacy assignment, and fixed-role read-only presentation; remove relevant identity mocks. | Component tests, frontend suite/check/build/coverage, and authenticated browser journeys. | `feat: integrate frontend access control` |
+| S7 — Phase 6A acceptance | Verify the integrated Keycloak/Session/CSRF and role-plus-relationship authorization model without regressing the complete Phase 5 template and generation journey. | Backend/frontend verification, real-MySQL concurrency coverage where applicable, Compose manual acceptance, and documentation closure. | `test: verify phase 6a security boundaries` |
+
+S4 is an integration checkpoint rather than an independently deployable
+security boundary. The Phase 6A branch must not be merged or deployed as
+customer-secured until S5 authorization and S7 acceptance pass. S2 and S3 may
+introduce nullable transitional relationships before authentication, but S4
+activation requires all normal new relationship- and actor-bearing writes to
+derive their User from the backend security context.
+
+### Phase 6B — User Administration and Invitation
+
+| Ticket group | Deferred outcome |
+| --- | --- |
+| Invitation registration | Single-use expiring invitation tokens, verified-email OIDC binding, revoke/resend, and eventual email delivery. |
+| User administration | Create/update users, role assignment, status mutation, and complete administrator UI. |
+| Administration invariants | Preserve at least one ACTIVE `SYSTEM_ADMIN`, including real-MySQL concurrent mutation tests. |
+| Assignment administration | Complete administrator Case-personnel assignment workspace beyond the minimal Phase 6A legacy recovery path. |
 
 ### Phase 7 — Cloud Deployment
 
