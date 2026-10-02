@@ -17,13 +17,17 @@ The platform supports the full working context around a legal case: responsible 
 
 ### System Administrator
 
-Manages users, roles, permissions, and system-level configuration.
+Manages user access, fixed-role assignments, and Case personnel assignments.
+The administrator role does not automatically grant access to Case details,
+document content, or legal work.
 
 Example: `王勇（系统管理员）` creates an account for a new legal assistant and assigns the assistant role.
 
-### Lead Lawyer
+### Lawyer
 
-Owns cases and performs core legal work.
+Performs legal work. A lawyer may be the lead lawyer or a supporting member of
+a particular Case; "lead lawyer" is a Case relationship rather than a system
+role.
 
 Example: `张伟（主办律师）` manages `张三诉某公司劳动争议案`, prepares documents, and reviews hearing reminders.
 
@@ -32,6 +36,13 @@ Example: `张伟（主办律师）` manages `张三诉某公司劳动争议案`,
 Supports assigned cases through information entry, document preparation, and reminder management.
 
 Example: `李娜（助理人员）` uploads case information and prepares evidence-submission reminders.
+
+### Partner
+
+Provides firm-level oversight. An active partner may inspect all Case details
+and Case-document metadata, but the role alone does not permit document
+download or Case mutation. A partner who also performs legal work receives the
+`LAWYER` role and the applicable Case relationship separately.
 
 ## Business Use Cases
 
@@ -349,8 +360,13 @@ Administrators can:
 
 - Create and update users.
 - Enable or disable accounts.
-- Assign roles.
-- Define permissions by business entity and action.
+- Assign users one or more fixed system roles.
+- Assign lead lawyers and supporting members to Cases.
+
+The fixed Phase 6 roles are `SYSTEM_ADMIN`, `LAWYER`, `ASSISTANT`, and
+`PARTNER`. Administrators may assign these roles but may not create, rename,
+delete, disable, or redefine them. Dynamic permission configuration is not part
+of Phase 6.
 
 Example:
 
@@ -415,29 +431,39 @@ Key information:
 - User ID
 - Name
 - Email
-- Role
+- One or more fixed roles
 - Account status
-- Team or department
 - Creation date
 
-Current roles:
+Phase 6 roles:
 
-- `系统管理员`
-- `主办律师`
-- `助理人员`
+- `SYSTEM_ADMIN` — system administrator
+- `LAWYER` — lawyer
+- `ASSISTANT` — legal assistant
+- `PARTNER` — partner
 
-A user may lead multiple cases or support multiple cases.
+External OpenID Connect identity is bound to the internal User through the
+provider issuer and subject. Email is required business data but is not the
+permanent login identifier. The application does not store passwords.
 
-### Role and Permission
+A user may lead multiple Cases or support multiple Cases. Each active/new Case
+has one lead lawyer, while supporting members may be eligible lawyers or legal
+assistants. The same user cannot be both lead and supporting member of one
+Case.
 
-A role groups permissions for users.
+### Role and Authorization
 
-A permission identifies an action against a business entity.
+A fixed role contributes organization-wide capabilities. Case access also
+depends on the user's current relationship to the Case, user status, Case
+archive state, and, for document removal, document creator identity.
+
+The backend enforces authorization. Frontend control visibility is only a user
+experience and never the security boundary.
 
 Examples:
 
 - Manage users.
-- Manage roles and permissions.
+- Assign fixed roles.
 - View or edit cases.
 - Manage document templates.
 - Review audit logs.
@@ -591,7 +617,11 @@ Example failure:
 
 ```text
 User
+ ├─ has → fixed Roles
+ ├─ binds → external OIDC Identity
  ├─ leads/supports → Case
+ ├─ creates → Case Documents
+ ├─ initiates → Document Generations
  └─ creates → Custom Document Template
 
 Case
@@ -609,7 +639,7 @@ Reminder
  └─ produces → Notification
 
 Role
- └─ grants → Permissions
+ └─ contributes to → backend authorization policy
 ```
 
 ## Current Implementation Boundary
@@ -657,6 +687,13 @@ is not implemented.
 
 The manual Case creation page submits the approved scalar model to the backend Case creation API. Lead lawyers still come from the temporary frontend user dataset and are persisted as name snapshots until the User domain is implemented.
 
+Phase 6A replaces that temporary identity boundary with fixed application roles,
+external OIDC identity binding, server-side sessions, user-backed Case
+relationships, actor attribution, and backend-enforced authorization. Existing
+lead-lawyer names remain historical display snapshots; they are not used to
+infer identity. Existing Cases require an explicit administrator assignment and
+are never automatically matched by name.
+
 Legacy mock models must not automatically be treated as backend entities. Each feature should define and approve its persistence and API contract during its own vertical-slice ticket.
 
 ## Product Roadmap
@@ -681,10 +718,11 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 
 ### Planned user journeys
 
-1. Assign user-backed supporting members and organize cases with tags.
-2. Work with case-related reminders using live data.
-3. Review and edit Case-specific generated drafts in a future browser editor.
-4. Access case capabilities through authenticated and authorized user accounts.
+1. Authenticate users and authorize Case/document work through fixed roles and
+   user-backed Case relationships.
+2. Assign user-backed supporting members and organize cases with tags.
+3. Work with case-related reminders using live data.
+4. Review and edit Case-specific generated drafts in a future browser editor.
 
 ## Product Rules
 
@@ -693,6 +731,8 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 - Flyway owns backend schema evolution.
 - Backend entities are not exposed directly through APIs.
 - Permissions should be enforced by the backend when authentication and authorization are introduced.
+- Phase 6A uses external OpenID Connect authentication and server-side
+  application sessions; it does not store application passwords.
 
 ## Known Gaps
 
@@ -701,5 +741,8 @@ Legacy mock models must not automatically be treated as backend entities. Each f
 - Case-related reminders remain mock-backed.
 - Browser DOCX editing, persisted draft/revision/finalization, OCR,
   evidence-derived suggestions, and AI assistance remain outside Phase 5.
-- Authentication and authorization are not implemented.
+- Authentication and authorization are planned for Phase 6A and are not yet
+  implemented.
+- Invitation registration, email delivery, complete user administration, and
+  user role/status mutation are deferred to Phase 6B.
 - Audit-log behavior is represented in navigation and permissions but is not implemented.

@@ -71,6 +71,13 @@ source distinguishes uploaded material from generated output.
 It does not own the Case itself, reusable template definitions, generation
 rules, or the storage-provider implementation.
 
+Phase 6A adds an optional creator relationship to the application User. The
+relationship is authorization data for document removal, not a general audit
+log. Existing documents retain a null creator and are removable only by the
+Case's lead lawyer after authorization is activated. New uploads and generated
+outputs derive their creator from the authenticated application actor; the
+browser cannot nominate another user.
+
 The current design does not require a separate universal `Document` entity
 above Case Document. “Document” is an umbrella business term; the justified
 Case-related concept is Case Document. Templates and generation records remain
@@ -183,6 +190,11 @@ business event; it is not an attempt log or the generation process itself.
 Document Generation does not define template structure, implement binary
 storage, or approve legal facts automatically.
 
+Phase 6A records the internal User that initiated a successful generation and a
+name snapshot. This is core generation traceability rather than a generic audit
+event. External identity, roles, sessions, and Case authorization remain owned
+outside the Document domain.
+
 ### 2.8 Generation Value
 
 A **Generation Value** is the final scalar value used for one Template Field in
@@ -242,6 +254,9 @@ Document Generation ─── uses ─── one exact Template Version
 Document Generation ─── occurs for ─── one Case
 Document Generation 1 ─── resolves ─── * Generation Value
 
+User 1 ─── creates ─── * Case Document
+User 1 ─── initiates ─── * Document Generation
+
 Template Version ─── provides structure for ─── Generated Document
 ```
 
@@ -253,6 +268,10 @@ Template Version ─── provides structure for ─── Generated Document
 - Each Template Version owns its exact field definitions.
 - Document Generation uses one exact Template Version rather than only the
   stable template identity.
+- A Case Document may retain its authenticated application creator. Legacy
+  documents have no inferred creator.
+- A successful Document Generation retains its initiating application User and
+  an actor-name snapshot without moving User ownership into this domain.
 - A Generated Document is structured by the exact Template Version used for
   its generation. The Template Version does not own the Generated Document.
 
@@ -677,6 +696,8 @@ stored as an independent flag that could drift from the relationship.
 
 The Document domain may depend on abstract capabilities for storage and
 rendering, but provider-specific concerns remain outside its business model.
+Phase 6A supplies an application-owned current-actor capability at that
+boundary; Document APIs must not accept caller-selected actor identifiers.
 
 ## 8. Future Evolution
 
@@ -778,9 +799,12 @@ Template Version. This question does not expand the current scope.
 
 ### Production governance
 
-- Which permissions protect template publication, generation, finalization,
-  download, and removal after the User domain exists?
-- What actor and audit information must be retained?
+- Phase 6A protects template publication, generation, Case-document access, and
+  removal through fixed roles, Case relationships, and document creator
+  identity. The exact matrix is recorded in D-032.
+- Full business audit-event retention remains deferred. Phase 6A retains only
+  the document creator and generation initiator required for authorization and
+  core generation traceability.
 - What malware-scanning, retention, legal-hold, purge, and reconciliation rules
   apply before customer legal materials are used in production?
 

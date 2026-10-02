@@ -376,15 +376,16 @@ remain subject to explicit human review before document finalization.
 
 ### D-020
 
-Status: Accepted
+Status: Accepted for removal lifecycle and storage coordination; authorization
+superseded by D-032
 
-A user who is authorized to edit a Case may permanently remove an individual
-document belonging to that Case. Permission is based on Case edit authority,
-not whether the document source is `UPLOADED` or `GENERATED`. Until
-authentication and authorization are implemented, this endpoint has the same
-temporary unauthenticated local-development boundary as the existing Case and
-document mutation APIs. Backend authorization is required before customer-data
-deployment.
+A user authorized under D-032 may permanently remove an individual document
+belonging to that Case. Permission depends on the current Case relationship and
+document creator rather than whether the document source is `UPLOADED` or
+`GENERATED`. Until Phase 6A authentication and authorization activate, this
+endpoint retains the same temporary unauthenticated local-development boundary
+as the existing Case and document mutation APIs. Backend authorization is
+required before customer-data deployment.
 
 Removal deletes both document metadata and binary content. The application uses
 transactional best-effort coordination:
@@ -1056,13 +1057,156 @@ acceptance journeys pass.
 
 ---
 
+## 2026-09-24
+
+### D-032
+
+Status: Accepted; defines Phase 6A minimum security and the Phase 6B boundary
+
+Phase 6 is divided so the project first delivers one coherent authenticated and
+authorized document-generation journey without expanding into a complete
+identity-administration product.
+
+Phase 6A includes fixed application users and roles, external OpenID Connect
+identity binding, server-side sessions, CSRF protection, user-backed Case
+relationships, document/generation actor attribution, backend authorization,
+and the minimum frontend integration required to exercise those controls.
+Phase 6B owns invitation registration, email delivery, complete user
+administration, user role/status mutation, and the corresponding last-active-
+administrator concurrency invariant. Phase 6A exposes no API that disables a
+User or mutates role assignments. If such an API is added, the last-active-
+`SYSTEM_ADMIN` invariant and its concurrency tests return to Phase 6A scope.
+
+The fixed application roles are:
+
+- `SYSTEM_ADMIN`;
+- `LAWYER`;
+- `ASSISTANT`;
+- `PARTNER`.
+
+A User may hold multiple roles. Roles are system-defined and cannot be created,
+renamed, deleted, disabled, or dynamically reconfigured by administrators.
+Permissions are additive; Phase 6A has no per-user deny rule or exception
+permission. "Lead lawyer" is a Case relationship, not a role.
+
+The application does not store passwords or password hashes. Local integration
+uses Keycloak as an OpenID Connect provider; a later cloud phase may substitute
+Alibaba Cloud IDaaS through environment-driven OIDC configuration. The
+application identifies an external account by the stable `(issuer, subject)`
+pair and binds it to one internal User. Email is required, normalized business
+data but is not the long-term authentication key. Identity-provider roles are
+not application authorization roles.
+
+OIDC Authorization Code flow terminates at the Spring backend as a confidential
+client. The backend creates a JDBC-backed application Session and the browser
+holds only an opaque `HttpOnly` cookie; OIDC tokens are not stored in browser
+`localStorage`. The idle timeout is two hours and the absolute lifetime is
+twelve hours, both environment-configurable. Logout invalidates the local
+Session first and then attempts provider logout; provider logout failure cannot
+restore the local Session. Existing valid application Sessions may continue
+during an identity-provider outage until their own expiry, while new login
+fails closed and no local-password fallback exists.
+
+Every protected request resolves the current application User state from the
+database rather than treating login-time roles or Case relationships as
+permanently trusted. A `DISABLED` User is rejected on the next protected
+request, the local Session is invalidated, and the response is `401`. Cookie-
+authenticated `POST`, `PUT`, `PATCH`, and `DELETE` requests require CSRF
+protection. Authentication answers who the current User is; a separate
+application authorization policy answers whether that User may perform the
+requested business operation.
+
+The Phase 6A authorization contract is:
+
+| Capability | Allowed application actor |
+| --- | --- |
+| Browse Case summaries | Any authenticated `ACTIVE` User |
+| View Case details | Current lead/supporting member, or `PARTNER` |
+| Create Case | `LAWYER`; creator becomes the lead lawyer |
+| Edit scalar Case fields | Current lead or supporting `LAWYER`/`ASSISTANT` |
+| Archive or restore Case | Current lead lawyer |
+| Transfer lead lawyer | `SYSTEM_ADMIN` through a dedicated assignment command |
+| Add/remove supporting members | Current lead lawyer; `SYSTEM_ADMIN` may administer assignments |
+| View Case-document metadata | Current Case member, or `PARTNER` |
+| Upload/download/generate Case documents | Current lead or supporting `LAWYER`/`ASSISTANT` |
+| Delete any Case document | Current lead lawyer |
+| Delete own Case document | Current supporting `LAWYER`/`ASSISTANT` while still assigned |
+| Read/download global template versions | Any authenticated `ACTIVE` User |
+| Inspect/publish template versions | `LAWYER` |
+| Manage users and role assignments | Deferred to Phase 6B |
+
+`SYSTEM_ADMIN` is an administrative role and does not by itself grant access to
+Case details or document content. `PARTNER` provides firm-wide Case-detail and
+document-metadata visibility but does not by itself permit content download or
+business mutation. A User needing both oversight and legal-work permissions
+holds both roles and, where required, a Case relationship.
+
+Authenticated access to an existing but forbidden resource returns `403`;
+missing resources return `404`; absent, expired, or invalid application
+authentication returns `401`. Frontend navigation and control visibility mirror
+these decisions for usability but never replace backend enforcement. Case ID,
+document ID, or URL manipulation must not bypass the same policy.
+
+Each active/new Case has exactly one User-backed lead lawyer who is `ACTIVE`
+and has `LAWYER`. A Case may have multiple supporting members who are `ACTIVE`
+and have `LAWYER` or `ASSISTANT`. One User cannot be both lead and supporting
+member of the same Case. Normal Case replacement cannot change team
+relationships. Dedicated team commands participate in Case optimistic locking,
+and archived Case relationships are read-only. Restoring an archived Case
+revalidates lead eligibility.
+
+Migration adds a nullable `lead_lawyer_user_id` while retaining the existing
+`lead_lawyer_name` as a historical/display snapshot. Names are never
+automatically matched to Users. Existing unmapped Cases fail closed to ordinary
+Case-detail access after authorization activates, but a minimal
+`SYSTEM_ADMIN`-only assignment path can bind a lead without granting that
+administrator access to Case content. Full assignment administration remains
+Phase 6B.
+
+Case Documents gain an optional internal creator. New authenticated uploads and
+generated outputs derive that User from the backend security context; clients
+cannot submit actor IDs. Legacy documents retain a null creator and only the
+current lead lawyer may delete them. Supporting members may delete only
+documents they created and only while they remain assigned and active.
+Successful Document Generations retain the initiating internal User and a name
+snapshot as core generation traceability. These actor relationships are not a
+generic audit-event system.
+
+Phase 6A is delivered in dependency order: decisions and policy; User/Role/
+Identity persistence; Case relationships and legacy assignment; actor
+attribution; one backend/frontend OIDC-Session-CSRF vertical slice; backend
+authorization; permission-aware frontend workflows; integrated acceptance.
+Relationship and actor columns remain nullable where existing Phase 5 data
+requires it. Before authentication activates, their migrations and service
+contracts must not break the existing local workflow. After activation, normal
+authenticated writes that create these relationships or actor records require
+backend-derived Users; null remains a legacy-data state rather than a valid
+new-write result.
+
+The authentication vertical slice must add frontend Session discovery and CSRF-
+aware mutation support before enforcing those controls on business APIs. That
+slice is an integration checkpoint, not an independently deployable security
+boundary: the Phase 6A branch cannot be deployed or merged as customer-secured
+until the following authorization slice is complete. Only synthetic data may be
+used before the complete Phase 6A acceptance suite passes.
+
+Phase 6A defers invitation/self-registration, real email, application-managed
+passwords, dynamic roles, complete user administration, full business audit,
+production MFA, cloud IDaaS, production deployment, and operational monitoring.
+MFA is ultimately delegated to the identity provider. Full audit and
+observability remain later production-readiness work; Phase 6A retains only the
+actor relationships required for authorization and generation traceability.
+
+---
+
 ## Future considerations (TODO)
 
 - Evaluate Flyway compatibility with MySQL 9.7.
 - Define an index strategy based on future query patterns.
 - Complete the dedicated system-wide UTC instant migration tracked as
   `INV-001` in `ENGINEERING_BACKLOG.md`.
-- After the User domain is finalized, replace the temporary lead-lawyer dropdown with a searchable system-user selector. The backend must validate that the selected user exists, is active, and is eligible to lead cases; decide the user relationship and retained lawyer-name snapshot together with the supporting-member model.
+- Phase 6A replaces the temporary lead-lawyer dropdown with a user-backed Case
+  relationship and retains the lawyer-name snapshot under D-032.
 - Define a legally appropriate retention and restricted permanent-purge policy, including related-document cleanup.
 - Select a malware-scanning approach and failure/quarantine policy before accepting untrusted production uploads.
 - Define document-object reconciliation and orphan cleanup if operational evidence requires it.
